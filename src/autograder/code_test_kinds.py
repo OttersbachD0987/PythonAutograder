@@ -3,7 +3,10 @@ from subprocess import Popen, PIPE
 from typing import TYPE_CHECKING, cast
 from re import Pattern
 from .code_walker import ASTWalker
+from io import StringIO
 import re
+import difflib
+from difflib import Match
 
 if TYPE_CHECKING:
     from .autograder_application import Autograder
@@ -35,8 +38,13 @@ def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> 
         stderr=PIPE,
         cwd=projectBase.dir, 
         text=True)
+    
+    #for projectInput in baseProject.projectInputs:
+    #    cast(StringIO, subBase.stdin).write(f"{projectInput}\n")
 
     stdoutBase, stderrBase = subBase.communicate("\n".join(baseProject.projectInputs), timeout=10.0)
+
+    print(f"Out: {stdoutBase}")
     
     subTest: Popen[str] = Popen(" ".join([
             "py", f"{projectTest.dir}\\{testProject.projectEntrypoint}", 
@@ -47,7 +55,13 @@ def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> 
         cwd=projectTest.dir, 
         text=True)
 
+    
+    #for projectInput in testProject.projectInputs:
+    #    cast(StringIO, subTest.stdin).write(f"{projectInput}\n")
+
     stdoutTest, stderrTest = subTest.communicate("\n".join(testProject.projectInputs), timeout=10.0)
+
+    print(f"Out: {difflib.SequenceMatcher(None, stdoutBase, stdoutTest).ratio()}\nErr: {difflib.SequenceMatcher(None, stderrBase, stderrTest).ratio()}\n")
 
     match stdoutMode:
         case "Ignore":
