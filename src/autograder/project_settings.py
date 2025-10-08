@@ -24,8 +24,7 @@ class ProjectSettings:
                 "import_default",
                 lambda a_key: Requirement(a_key),
                 Requirement.FORBIDDEN
-            ),
-            {
+            ), {
                 key: tryCast(
                     value,
                     Requirement,
