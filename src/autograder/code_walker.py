@@ -306,6 +306,10 @@ class ASTWalker(NodeVisitor):
                     return 1
             case ASTNodeType.IMPORT:
                 if isinstance(a_node, Import):
+                    a = Import()
+
+                    for aliass in a.names:
+                        aliass.name
                     return 1
             case ASTNodeType.IMPORT_FROM:
                 if isinstance(a_node, ImportFrom):

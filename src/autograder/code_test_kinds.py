@@ -44,7 +44,7 @@ def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> 
 
     stdoutBase, stderrBase = subBase.communicate("\n".join(baseProject.projectInputs), timeout=10.0)
 
-    print(f"Out: {stdoutBase}")
+    #print(f"Out: {stdoutBase}")
     
     subTest: Popen[str] = Popen(" ".join([
             "py", f"{projectTest.dir}\\{testProject.projectEntrypoint}", 
@@ -61,7 +61,7 @@ def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> 
 
     stdoutTest, stderrTest = subTest.communicate("\n".join(testProject.projectInputs), timeout=10.0)
 
-    print(f"Out: {difflib.SequenceMatcher(None, stdoutBase, stdoutTest).ratio()}\nErr: {difflib.SequenceMatcher(None, stderrBase, stderrTest).ratio()}\n")
+    #print(f"Out: {difflib.SequenceMatcher(None, stdoutBase, stdoutTest).ratio()}\nErr: {difflib.SequenceMatcher(None, stderrBase, stderrTest).ratio()}\n")
 
     match stdoutMode:
         case "Ignore":

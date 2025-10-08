@@ -14,6 +14,9 @@ def main():
     program2Name: str = "program_two"
     program2Directory: str = "Tests\\program2"
     program2: Project = Project(program2Name, f"{os.getcwd()}\\{program2Directory}")
+    
+    entrypointOne: str = input("Entrypoint One: ")
+    entrypointTwo: str = input("Entrypoint Two: ")
 
     grader: Autograder = Autograder()
     grader.setConfigurationFromDict({
@@ -41,7 +44,7 @@ def main():
                     "test_project": {
                         "node_id": "project",
                         "project_name": program1Name,
-                        "project_entrypoint": "no_errors.py",
+                        "project_entrypoint": entrypointOne,
                         "project_arguments": {
                             "node_id": "dictionary",
                             "nodes": {}
@@ -124,7 +127,7 @@ def main():
                     "test_project": {
                         "node_id": "project",
                         "project_name": program1Name,
-                        "project_entrypoint": "no_errors.py",
+                        "project_entrypoint": entrypointOne,
                         "project_arguments": {
                             "node_id": "dictionary",
                             "nodes": {}
@@ -185,7 +188,7 @@ def main():
                     "test_project": {
                         "node_id": "project",
                         "project_name": program1Name,
-                        "project_entrypoint": "no_errors.py",
+                        "project_entrypoint": entrypointOne,
                         "project_arguments": {
                             "node_id": "dictionary",
                             "nodes": {}
@@ -245,7 +248,7 @@ def main():
                     "test_project": {
                         "node_id": "project",
                         "project_name": program1Name,
-                        "project_entrypoint": "no_errors.py",
+                        "project_entrypoint": entrypointOne,
                         "project_arguments": {
                             "node_id": "dictionary",
                             "nodes": {}
@@ -299,7 +302,7 @@ def main():
                     "test_project": {
                         "node_id": "project",
                         "project_name": program2Name,
-                        "project_entrypoint": "program2_stu_correct.py",
+                        "project_entrypoint": entrypointTwo,
                         "project_arguments": {
                             "node_id": "dictionary",
                             "nodes": {}
@@ -379,7 +382,7 @@ def main():
                     "test_project": {
                         "node_id": "project",
                         "project_name": program2Name,
-                        "project_entrypoint": "program2_stu_correct.py",
+                        "project_entrypoint": entrypointTwo,
                         "project_arguments": {
                             "node_id": "dictionary",
                             "nodes": {}
@@ -437,7 +440,7 @@ def main():
                     "test_project": {
                         "node_id": "project",
                         "project_name": program2Name,
-                        "project_entrypoint": "program2_stu_correct.py",
+                        "project_entrypoint": entrypointTwo,
                         "project_arguments": {
                             "node_id": "dictionary",
                             "nodes": {}
@@ -497,7 +500,7 @@ def main():
                     "test_project": {
                         "node_id": "project",
                         "project_name": program2Name,
-                        "project_entrypoint": "program2_stu_correct.py",
+                        "project_entrypoint": entrypointTwo,
                         "project_arguments": {
                             "node_id": "dictionary",
                             "nodes": {}
@@ -594,6 +597,8 @@ def main():
         normalValue: float = 0
         maxValue: float = 0
         if returned:
+            normalValue = grader.instanceData.report.usable(grader.settings.criteria)[returned[0]].amount
+            maxValue = grader.instanceData.report.usable(grader.settings.criteria)[returned[0]].maxAmount
             print(f"{returned[0]:<20} {str(False):<8} {100:<6} {returned[1]:<6} {returned[2]}")
         else:
             for criterion, (message, amount, maxAmount, passes) in grader.instanceData.report.usable(grader.settings.criteria).items():

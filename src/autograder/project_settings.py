@@ -24,14 +24,14 @@ class ProjectSettings:
                 "import_default",
                 lambda a_key: Requirement(a_key),
                 Requirement.FORBIDDEN
-            ), 
+            ),
             {
                 key: tryCast(
                     value,
                     Requirement,
                     Requirement.ALLOWED
                 ) for key, value in a_data.get("import_overrides", {}).items()
-            }, 
+            },
             tryGetCast(
                 a_data,
                 "import_local",

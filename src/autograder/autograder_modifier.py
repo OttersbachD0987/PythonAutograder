@@ -7,7 +7,7 @@ class ModifierType(StrEnum):
     OVERRIDE = auto()
     OVERKILL = auto()
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class AutograderModifier:
     criterion: str
     modifierType: ModifierType
