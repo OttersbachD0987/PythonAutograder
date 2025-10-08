@@ -4,6 +4,8 @@ if TYPE_CHECKING:
     from project.project import Project
 
 class AutograderInstanceData:
+    """The instance data of an autograder.
+    """
     def __init__(self):
         self.projects: dict[str, Project] = {}
         self.report: AutograderReport = AutograderReport()

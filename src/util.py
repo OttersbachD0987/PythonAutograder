@@ -32,6 +32,14 @@ def tryCast[V, R](a_value: V, a_converter: Callable[[V], R], a_default: R) -> R:
         return a_default
     
 def intput(a_prompt: str) -> int:
+    """...
+
+    Args:
+        a_prompt (str): The prompt to display.
+
+    Returns:
+        int: The value took in.
+    """
     try:
         return int(input(a_prompt))
     except Exception as e:

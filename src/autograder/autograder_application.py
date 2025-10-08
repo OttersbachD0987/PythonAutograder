@@ -12,6 +12,11 @@ class Autograder:
         self.settings.updateFromDict(a_data)
     
     def loadConfiguration(self, a_path: str) -> None:
+        """Load a configuration from a file.
+
+        Args:
+            a_path (str): The filepath to the file.
+        """
         try:
             with open(a_path, "r") as configurationFile:
                 self.setConfigurationFromDict(json.load(configurationFile))
