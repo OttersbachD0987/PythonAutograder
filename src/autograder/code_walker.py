@@ -1,7 +1,7 @@
 import ast
 import re
 from ast import NodeVisitor, While, Constant, Compare, expr, Call, UnaryOp, Not, Gt, GtE, Lt, LtE, Eq, NotEq, FunctionDef, ImportFrom, Name, Load, Set, Del, AST, Add, alias, And, AnnAssign, arg, arguments, Assert, Assign, AsyncFor, AsyncFunctionDef, AsyncWith, Attribute, AugAssign, Await, BinOp, BitAnd, BitOr, BitXor, BoolOp, boolop, Break, ClassDef, cmpop, comprehension, Continue, Delete, Dict, DictComp, Div, ExceptHandler, excepthandler, Expr, expr_context, Expression, FloorDiv, For, FormattedValue, FunctionType, GeneratorExp, Global, If, IfExp, Import, In, Interactive, Invert, Is, IsNot, JoinedStr, keyword, Lambda, List, ListComp, LShift, Match, match_case, MatchAs, MatchClass, MatchMapping, MatchOr, MatchSequence, MatchSingleton, MatchStar, MatchValue, MatMult, Mod, mod, Module, Mult, NamedExpr, NodeTransformer, Nonlocal, NotIn, operator, Or, ParamSpec, Pass, pattern, Pow, Raise, Return, RShift, SetComp, Slice, Starred, stmt, Store, Sub, Subscript, Try, TryStar, Tuple, type_ignore, type_param, TypeAlias, TypeIgnore, TypeVar, TypeVarTuple, UAdd, unaryop, USub, With, withitem, Yield, YieldFrom, iter_fields
-from typing import Any, cast, TYPE_CHECKING, Self
+from typing import Any, cast, TYPE_CHECKING, Self, Optional
 from enum import StrEnum, auto
 from dataclasses import dataclass
 
@@ -326,23 +326,42 @@ class ASTWalker(NodeVisitor):
                 if isinstance(a_node, Set):
                     return 1
             case ASTNodeType.DEL:
-                ...
+                if isinstance(a_node, Del):
+                    return 1
             case ASTNodeType.ADD:
-                ...
+                if isinstance(a_node, Add):
+                    return 1
             case ASTNodeType.ALIAS:
-                ...
+                if isinstance(a_node, alias):
+                    return 1 if (re.search(a_pattern.comparisonData["alias_name"], str(a_node.asname)) and re.search(a_pattern.comparisonData["imported_module"], a_node.name)) else 0
             case ASTNodeType.AND:
                 if isinstance(a_node, And):
                     return 1
             case ASTNodeType.ANN_ASSIGN:
-                ...
+                if isinstance(a_node, AnnAssign):
+                    a_node.annotation
+                    a_node.simple
+                    a_node.target
+                    a_node.value
+                    return 1
             case ASTNodeType.ARG:
                 if isinstance(a_node, arg):
                     return 1 if re.search(a_pattern.comparisonData["name"], a_node.arg) else 0
             case ASTNodeType.ARGUMENTS:
-                ...
+                if isinstance(a_node, arguments):
+                    a_node.args
+                    a_node.defaults
+                    a_node.kw_defaults
+                    a_node.kwarg
+                    a_node.kwonlyargs
+                    a_node.posonlyargs
+                    a_node.vararg
+                    return 1
             case ASTNodeType.ASSERT:
-                ...
+                if isinstance(a_node, Assert):
+                    a_node.msg
+                    a_node.test
+                    return 1
             case ASTNodeType.ASSIGN:
                 if isinstance(a_node, Assign):
                     if "match_kind" in a_pattern.comparisonData:
@@ -414,31 +433,60 @@ class ASTWalker(NodeVisitor):
             case ASTNodeType.GLOBAL:
                 ...
             case ASTNodeType.IF:
-                ...
+                if isinstance(a_node, If):
+                    if "match_kind" in a_pattern.comparisonData:
+                        match a_pattern.comparisonData["match_kind"]:
+                            case "test_pattern":
+                                return self.visiting(a_node.test, a_pattern.comparisonData["test_pattern"])
+                            case "test_patterns":
+                                return 1 if any([0 < self.visiting(a_node.test, testPattern) for testPattern in a_pattern.comparisonData["test_patterns"]]) else 0
+                    for statement in a_node.orelse:
+                        ...
+                    return 1
             case ASTNodeType.IF_EXP:
                 ...
             case ASTNodeType.IN:
-                ...
+                if isinstance(a_node, In):
+                    return 1
             case ASTNodeType.INTERACTIVE:
-                ...
+                if isinstance(a_node, Interactive):
+                    a_node.body
+                    return 1
             case ASTNodeType.INVERT:
-                ...
+                if isinstance(a_node, Invert):
+                    return 1
             case ASTNodeType.IS:
-                ...
+                if isinstance(a_node, Is):
+                    return 1
             case ASTNodeType.IS_NOT:
-                ...
+                if isinstance(a_node, IsNot):
+                    return 1
             case ASTNodeType.JOINED_STR:
-                ...
+                if isinstance(a_node, JoinedStr):
+                    return 1
             case ASTNodeType.KEYWORD:
-                ...
+                if isinstance(a_node, keyword):
+                    a_node.arg
+                    a_node.value
+                    return 1
             case ASTNodeType.LAMBDA:
-                ...
+                if isinstance(a_node, Lambda):
+                    a_node.args
+                    a_node.body
+                    return 1
             case ASTNodeType.LIST:
-                ...
+                if isinstance(a_node, List):
+                    a_node.ctx
+                    a_node.elts
+                    return 1
             case ASTNodeType.LIST_COMP:
-                ...
+                if isinstance(a_node, ListComp):
+                    a_node.elt
+                    a_node.generators
+                    return 1
             case ASTNodeType.L_SHIFT:
-                ...
+                if isinstance(a_node, LShift):
+                    return 1
             case ASTNodeType.MATCH:
                 ...
             case ASTNodeType.MATCH_CASE:
@@ -460,13 +508,19 @@ class ASTWalker(NodeVisitor):
             case ASTNodeType.MATCH_VALUE:
                 ...
             case ASTNodeType.MAT_MULT:
-                ...
+                if isinstance(a_node, MatMult):
+                    return 1
             case ASTNodeType.MOD:
-                ...
+                if isinstance(a_node, Mod):
+                    return 1
             case ASTNodeType.MODULE:
-                ...
+                if isinstance(a_node, Module):
+                    a_node.body
+                    a_node.type_ignores
+                    return 1
             case ASTNodeType.MULT:
-                ...
+                if isinstance(a_node, Mult):
+                    return 1
             case ASTNodeType.NAMED_EXPR:
                 ...
             case ASTNodeType.NONLOCAL:
@@ -476,21 +530,31 @@ class ASTWalker(NodeVisitor):
             case ASTNodeType.OPERATOR:
                 ...
             case ASTNodeType.OR:
-                ...
+                if isinstance(a_node, Or):
+                    return 1
             case ASTNodeType.PARAM_SPEC:
                 ...
             case ASTNodeType.PASS:
-                ...
+                if isinstance(a_node, Pass):
+                    return 1
             case ASTNodeType.PATTERN:
-                ...
+                if isinstance(a_node, pattern):
+                    return 1
             case ASTNodeType.POW:
-                ...
+                if isinstance(a_node, Pow):
+                    return 1
             case ASTNodeType.RAISE:
-                ...
+                if isinstance(a_node, Raise):
+                    a_node.cause
+                    a_node.exc
+                    return 1
             case ASTNodeType.RETURN:
-                ...
+                if isinstance(a_node, Return):
+                    a_node.value
+                    return 1
             case ASTNodeType.R_SHIFT:
-                ...
+                if isinstance(a_node, RShift):
+                    return 1
             case ASTNodeType.SET_COMP:
                 ...
             case ASTNodeType.SLICE:
@@ -498,13 +562,20 @@ class ASTWalker(NodeVisitor):
             case ASTNodeType.STARRED:
                 ...
             case ASTNodeType.STMT:
-                ...
+                if isinstance(a_node, stmt):
+                    return 1
             case ASTNodeType.STORE:
-                ...
+                if isinstance(a_node, Store):
+                    return 1
             case ASTNodeType.SUB:
-                ...
+                if isinstance(a_node, Sub):
+                    return 1
             case ASTNodeType.SUBSCRIPT:
-                ...
+                if isinstance(a_node, Subscript):
+                    a_node.ctx
+                    a_node.slice
+                    a_node.value
+                    return 1
             case ASTNodeType.TRY:
                 ...
             case ASTNodeType.TRY_STAR:
