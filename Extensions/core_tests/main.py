@@ -1,16 +1,16 @@
-from .code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, executeCodeTestNode, ASTWalkTestNode, ASTPatternTestNode
+from ..code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, executeCodeTestNode, ASTWalkTestNode, ASTPatternTestNode
 from subprocess import Popen, PIPE
 from typing import TYPE_CHECKING, cast
 from re import Pattern
-from .code_walker import ASTWalker
+from ..code_walker import ASTWalker
 from io import StringIO
 import re
 import difflib
 from difflib import Match
 
 if TYPE_CHECKING:
-    from .autograder_application import Autograder
-    from project.python_file import PythonFile
+    from src.autograder.autograder_application import Autograder
+    from src.project.python_file import PythonFile
 
 def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> tuple[float, bool]:
     """

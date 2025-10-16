@@ -624,7 +624,7 @@ def main():
     
 
 
-import autograder.code_test_kinds
+import Extensions.core_tests.main
 
 
 if __name__ == "__main__":

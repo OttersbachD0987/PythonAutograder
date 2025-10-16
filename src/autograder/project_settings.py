@@ -1,6 +1,6 @@
 from enum import IntEnum, auto
 from typing import Any, Self
-from util import tryCast, tryGetCast
+from utils.util import tryCast, tryGetCast
 from dataclasses import dataclass
 
 class Requirement(IntEnum):

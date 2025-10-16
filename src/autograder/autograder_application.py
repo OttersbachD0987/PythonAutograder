@@ -1,5 +1,6 @@
 from .autograder_settings import AutograderSettings
 from .autograder_instance_data import AutograderInstanceData
+from .extensions.extension_manager import ExtensionManager
 from typing import Any
 import json
 
@@ -7,6 +8,7 @@ class Autograder:
     def __init__(self):
         self.settings: AutograderSettings = AutograderSettings()
         self.instanceData: AutograderInstanceData = AutograderInstanceData()
+        self.extension_manager: ExtensionManager = ExtensionManager()
 
     def setConfigurationFromDict(self, a_data: dict[str, Any]):
         self.settings.updateFromDict(a_data)

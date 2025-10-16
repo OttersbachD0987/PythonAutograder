@@ -6,10 +6,10 @@ from autograder.autograder_settings import AutograderSettings
 from enum import IntEnum, auto
 from dataclasses import dataclass
 from typing import Any
-from util import intput
+from utils.util import intput
 import dataclasses, os
 
-from autograder import code_test_kinds
+from Extensions.core_tests import main
 
 class Screen(IntEnum):
     MAIN = auto()

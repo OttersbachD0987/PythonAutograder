@@ -12,11 +12,11 @@ from typing import Any
 # MAIN EXECUTION
 # ===============================
 def main():
-    instructorProjectName: str = input("Internal name to use for the project: ")
-    instructorProjectDirectory: str = input("Path to instructor project directory: ")
+    instructorProjectName: str = "a" #input("Internal name to use for the project: ")
+    instructorProjectDirectory: str = "./Tests/instructor" #input("Path to instructor project directory: ")
     instructorProject: Project = Project(instructorProjectName, f"{os.getcwd()}\\{instructorProjectDirectory}")
-    studentProjectName: str = input("Internal name to use for the project: ")
-    studentProjectDirectory: str = input("Path to student project directory: ")
+    studentProjectName: str = "b" #input("Internal name to use for the project: ")
+    studentProjectDirectory: str = "./Tests/instructor" #input("Path to student project directory: ")
     studentProject: Project = Project(studentProjectName, f"{os.getcwd()}\\{studentProjectDirectory}")
 
     grader: Autograder = Autograder()
@@ -243,6 +243,9 @@ def main():
             "foo": 1
         }   #self.criteria
     })
+    
+    grader.extension_manager.loadFromDirectory("./Extensions")
+    grader.extension_manager.importExtensions()
 
     grader.instanceData.projects[instructorProjectName] = instructorProject
     grader.instanceData.projects[studentProjectName] = studentProject
@@ -283,9 +286,6 @@ def main():
             print(f"{criterion:<20} {str(passes):<8} {grader.settings.criteria[criterion]:<6} {amount:<6} {message}")
     print("\n=== Final Grade ===")
     print(f"Score: {normalValue}/{maxValue} (Breakdown: {grader.settings.criteria})")
-
-
-import autograder.code_test_kinds
 
 if __name__ == "__main__":
     main()
