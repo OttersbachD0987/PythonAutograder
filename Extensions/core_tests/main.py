@@ -1,9 +1,7 @@
-from src.autograder.code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, executeCodeTestNode, ASTWalkTestNode, ASTPatternTestNode
+from autograder.code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, ASTPatternTestNode
 from subprocess import Popen, PIPE
-from typing import TYPE_CHECKING, cast, Optional
-from re import Pattern
-from src.autograder.code_walker import ASTWalker
-from io import StringIO
+from typing import TYPE_CHECKING, cast
+from autograder.code_walker import ASTWalker
 import re
 import difflib
 from difflib import Match
@@ -16,88 +14,52 @@ def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> 
     """
     """
     grade: int = 0
-    VALID_OUTPUTS: tuple[str, str, str] = ("Match", "No Match", "Ignore")
+    VALID_OUTPUTS: set[str] = {"Match", "No Match", "Ignore"}
+    if isinstance(baseProject := a_arguments["base_project"], ProjectTestNode) and isinstance(testProject := a_arguments["test_project"], ProjectTestNode):
+        subBase: Popen[str] = Popen(" ".join([
+                "py", f"{(projectDir := a_app.instanceData.projects[baseProject.projectName].dir)}\\{baseProject.projectEntrypoint}", 
+                *[f"\"{node.literalValue}\"" for node in baseProject.projectArguments.nodes.values() if isinstance(node, LiteralTestNode)]]), 
+            stdin=PIPE,
+            stdout=PIPE,
+            stderr=PIPE,
+            cwd=projectDir, 
+            text=True)
 
-    baseProject: Optional[ProjectTestNode] = project if isinstance(project := a_arguments["base_project"], ProjectTestNode) else None
-    testProject: Optional[ProjectTestNode] = project if isinstance(project := a_arguments["test_project"], ProjectTestNode) else None
+        stdoutBase, stderrBase = subBase.communicate("\n".join(baseProject.projectInputs), timeout=10.0)
 
-    if not (testProject and baseProject):
-        return grade, False
-    
-    stdoutMode:     str = literalValue if (isinstance(literalNode := a_arguments["stdout"],      LiteralTestNode) and literalNode.literalType == "string" and ((literalValue := literalNode.literalValue) in VALID_OUTPUTS)) else "Match"
-    stderrMode:     str = literalValue if (isinstance(literalNode := a_arguments["stderr"],      LiteralTestNode) and literalNode.literalType == "string" and ((literalValue := literalNode.literalValue) in VALID_OUTPUTS)) else "Match"
-    returnCodeMode: str = literalValue if (isinstance(literalNode := a_arguments["return_code"], LiteralTestNode) and literalNode.literalType == "string" and ((literalValue := literalNode.literalValue) in VALID_OUTPUTS)) else "Match"
-    
-    projectBase = a_app.instanceData.projects[baseProject.projectName]
-    projectTest = a_app.instanceData.projects[testProject.projectName]
+        subTest: Popen[str] = Popen(" ".join([
+                "py", f"{(projectDir := a_app.instanceData.projects[testProject.projectName].dir)}\\{testProject.projectEntrypoint}", 
+                *[f"\"{node.literalValue}\"" for node in testProject.projectArguments.nodes.values() if isinstance(node, LiteralTestNode)]]), 
+            stdin=PIPE,
+            stdout=PIPE,
+            stderr=PIPE,
+            cwd=projectDir, 
+            text=True)
 
-    subBase: Popen[str] = Popen(" ".join([
-            "py", f"{projectBase.dir}\\{baseProject.projectEntrypoint}", 
-            *[f"\"{node.literalValue}\"" for node in baseProject.projectArguments.nodes.values() if isinstance(node, LiteralTestNode)]]), 
-        stdin=PIPE,
-        stdout=PIPE,
-        stderr=PIPE,
-        cwd=projectBase.dir, 
-        text=True)
-    
-    #for projectInput in baseProject.projectInputs:
-    #    cast(StringIO, subBase.stdin).write(f"{projectInput}\n")
+        stdoutTest, stderrTest = subTest.communicate("\n".join(testProject.projectInputs), timeout=10.0)
 
-    stdoutBase, stderrBase = subBase.communicate("\n".join(baseProject.projectInputs), timeout=10.0)
-
-    #print(f"Out: {stdoutBase}")
-    
-    subTest: Popen[str] = Popen(" ".join([
-            "py", f"{projectTest.dir}\\{testProject.projectEntrypoint}", 
-            *[f"\"{node.literalValue}\"" for node in testProject.projectArguments.nodes.values() if isinstance(node, LiteralTestNode)]]), 
-        stdin=PIPE,
-        stdout=PIPE,
-        stderr=PIPE,
-        cwd=projectTest.dir, 
-        text=True)
-
-    
-    #for projectInput in testProject.projectInputs:
-    #    cast(StringIO, subTest.stdin).write(f"{projectInput}\n")
-
-    stdoutTest, stderrTest = subTest.communicate("\n".join(testProject.projectInputs), timeout=10.0)
-
-    #print(f"Out: {difflib.SequenceMatcher(None, stdoutBase, stdoutTest).ratio()}\nErr: {difflib.SequenceMatcher(None, stderrBase, stderrTest).ratio()}\n")
-
-    match stdoutMode:
-        case "Ignore":
-            grade += 1
-        case "Match":
-            #print(stdoutBase == stdoutTest)
-            if stdoutBase == stdoutTest:
+        match (value if (isinstance(node := a_arguments["stdout"], LiteralTestNode) and node.literalType == "string" and ((value := node.literalValue) in VALID_OUTPUTS)) else "Match"):
+            case "Ignore":
                 grade += 1
-        case "No Match":
-            #print(stdoutBase != stdoutTest)
-            if stdoutBase != stdoutTest:
+            case "Match"    if stdoutBase == stdoutTest:
+                grade += 1
+            case "No Match" if stdoutBase != stdoutTest:
                 grade += 1
 
-    match stderrMode:
-        case "Ignore":
-            grade += 1
-        case "Match":
-            #print(stderrBase == stderrTest)
-            if stderrBase == stderrTest:
+        match (value if (isinstance(node := a_arguments["stderr"], LiteralTestNode) and node.literalType == "string" and ((value := node.literalValue) in VALID_OUTPUTS)) else "Match"):
+            case "Ignore":
                 grade += 1
-        case "No Match":
-            #print(stderrBase != stderrTest)
-            if stderrBase != stderrTest:
+            case "Match"    if stderrBase == stderrTest:
+                grade += 1
+            case "No Match" if stderrBase != stderrTest:
                 grade += 1
 
-    match returnCodeMode:
-        case "Ignore":
-            grade += 1
-        case "Match":
-            #print(subBase.returncode == subTest.returncode)
-            if subBase.returncode == subTest.returncode:
+        match (value if (isinstance(node := a_arguments["return_code"], LiteralTestNode) and node.literalType == "string" and ((value := node.literalValue) in VALID_OUTPUTS)) else "Match"):
+            case "Ignore":
                 grade += 1
-        case "No Match":
-            #print(subBase.returncode != subTest.returncode)
-            if subBase.returncode != subTest.returncode:
+            case "Match"    if subBase.returncode == subTest.returncode:
+                grade += 1
+            case "No Match" if subBase.returncode != subTest.returncode:
                 grade += 1
     
     return grade / 3.0, grade == 3
@@ -106,46 +68,25 @@ def assertOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> t
     """
     """
     grade: int = 0
-    testProject: Optional[ProjectTestNode] = project if isinstance(project := a_arguments["test_project"], ProjectTestNode) else None
-
-    if not testProject:
-        return grade, False
-
-    stdoutMode:     Pattern = re.compile(literalNode.literalValue if isinstance(literalNode := a_arguments["stdout"],      LiteralTestNode) and literalNode.literalType == "string" else ".*")
-    stderrMode:     Pattern = re.compile(literalNode.literalValue if isinstance(literalNode := a_arguments["stderr"],      LiteralTestNode) and literalNode.literalType == "string" else ".*")
-    returnCodeMode: Pattern = re.compile(literalNode.literalValue if isinstance(literalNode := a_arguments["return_code"], LiteralTestNode) and literalNode.literalType == "string" else ".*")
-
-    project = a_app.instanceData.projects[testProject.projectName]
-
-    sub: Popen[str] = Popen(" ".join([
-            "py", f"{project.dir}\\{testProject.projectEntrypoint}", 
-            *[f"\"{node.literalValue}\"" for node in testProject.projectArguments.nodes.values() if isinstance(node, LiteralTestNode)]]), 
-        stdin=PIPE, 
-        stdout=PIPE,
-        stderr=PIPE,
-        cwd=project.dir, 
-        text=True)
-    
-    stdout, stderr = sub.communicate("\n".join(testProject.projectInputs), timeout=10.0)
+    if isinstance(testProject := a_arguments["test_project"], ProjectTestNode):
+        sub: Popen[str] = Popen(" ".join([
+                "py", f"{(projectDir := a_app.instanceData.projects[testProject.projectName].dir)}\\{testProject.projectEntrypoint}", 
+                *[f"\"{node.literalValue}\"" for node in testProject.projectArguments.nodes.values() if isinstance(node, LiteralTestNode)]]), 
+            stdin=PIPE, 
+            stdout=PIPE,
+            stderr=PIPE,
+            cwd=projectDir, 
+            text=True)
         
-    #if sub.stdout != None:
-    #    print(f"stdout:\n {stdout.strip()}\n")
-    #if sub.stderr != None:
-    #    print(f"stderr:\n {stderr.strip()}\n")
+        stdout, stderr = sub.communicate("\n".join(testProject.projectInputs), timeout=10.0)
 
-    #print(F"{stdoutMode.match(stdout.strip())}")
-    #print(F"{stderrMode.match(stderr.strip())}")
-    #print(F"{returnCodeMode.match(f"{sub.returncode}")}")
-
-    #print(f"Return Code: {sub.returncode} : {2}")
-
-    if stdoutMode.match(stdout.strip()):
-        grade += 1
-    if stderrMode.match(stderr.strip()):
-        grade += 1
-    if returnCodeMode.match(f"{sub.returncode}"):
-        grade += 1
-    
+        if re.match(node.literalValue if isinstance(node := a_arguments["stdout"], LiteralTestNode) and node.literalType == "string" else ".*", stdout.strip()):
+            grade += 1
+        if re.match(node.literalValue if isinstance(node := a_arguments["stderr"], LiteralTestNode) and node.literalType == "string" else ".*", stderr.strip()):
+            grade += 1
+        if re.match(node.literalValue if isinstance(node := a_arguments["return_code"], LiteralTestNode) and node.literalType == "string" else ".*", f"{sub.returncode}"):
+            grade += 1
+        
     return grade / 3.0, grade == 3
 
 #def walkAST(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> tuple[float, bool]:
