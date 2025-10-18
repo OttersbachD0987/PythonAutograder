@@ -15,8 +15,8 @@ def main():
     program2Directory: str = "Tests\\program2"
     program2: Project = Project(program2Name, f"{os.getcwd()}\\{program2Directory}")
     
-    entrypointOne: str = input("Entrypoint One: ")
-    entrypointTwo: str = input("Entrypoint Two: ")
+    entrypointOne: str = "no_errors.py"
+    entrypointTwo: str = "program2_solution.py"
 
     grader: Autograder = Autograder()
     grader.setConfigurationFromDict({
@@ -557,6 +557,9 @@ def main():
             "variables": 5,
         }   #self.criteria
     })
+    
+    grader.extension_manager.loadFromDirectory("./Extensions")
+    grader.extension_manager.importExtensions()
 
     grader.instanceData.projects[program1Name] = program1
     grader.instanceData.projects[program2Name] = program2
@@ -619,13 +622,6 @@ def main():
     #print("---")
     #for section in grader.instanceData.report.messages.items():
     #    print(f"{time}: {message}")
-    
-
-    
-
-
-import Extensions.core_tests.main
-
 
 if __name__ == "__main__":
     main()

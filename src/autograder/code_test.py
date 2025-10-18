@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import ClassVar, Callable, Any, Self, TYPE_CHECKING, cast
+from typing import ClassVar, Callable, Any, Self, TYPE_CHECKING, cast, override, Optional
 from abc import ABC, abstractmethod
 from .code_walker import ASTPattern
 from .autograder_modifier import AutograderModifier, ModifierType
@@ -50,6 +50,7 @@ class ICanReturnFloat(ICanReturnAny, ABC):
 class ListTestNode(CodeTestNode):
     nodes: list[CodeTestNode]
 
+    @override
     def toDict(self) -> dict[str, Any]:
         """Convert to a dict.
         """
@@ -62,6 +63,7 @@ class ListTestNode(CodeTestNode):
 class DictionaryTestNode(CodeTestNode):
     nodes: dict[str, CodeTestNode]
 
+    @override
     def toDict(self) -> dict[str, Any]:
         """Convert to a dict.
         """
@@ -75,6 +77,7 @@ class LiteralTestNode(ICanReturnBool, ICanReturnStr, ICanReturnInt, ICanReturnFl
     literalType: str
     literalValue: Any
     
+    @override
     def toDict(self) -> dict[str, Any]:
         """Convert to a dict.
         """
@@ -84,18 +87,23 @@ class LiteralTestNode(ICanReturnBool, ICanReturnStr, ICanReturnInt, ICanReturnFl
             "literal_value": self.literalValue
         }
     
+    @override
     def evaluateBool(self, a_data: dict[str, Any]) -> bool:
-        return self.literalValue if self.literalType == "boolean" else False
+        return bool(self.literalValue) if self.literalType == "boolean" else False
 
+    @override
     def evaluateStr(self, a_data: dict[str, Any]) -> str:
-        return self.literalValue if self.literalType == "string" else ""
+        return str(self.literalValue) if self.literalType == "string" else ""
     
+    @override
     def evaluateInt(self, a_data: dict[str, Any]) -> int:
-        return self.literalValue if self.literalType == "int" else -1
+        return int(self.literalValue) if self.literalType == "int" else -1
     
+    @override
     def evaluateFloat(self, a_data: dict[str, Any]) -> float:
-        return self.literalValue if self.literalType == "float" else 0
+        return float(self.literalValue) if self.literalType == "float" else 0
     
+    @override
     def evaluateAny(self, a_data: dict[str, Any]) -> Any:
         return self.literalType
 
@@ -103,26 +111,32 @@ class LiteralTestNode(ICanReturnBool, ICanReturnStr, ICanReturnInt, ICanReturnFl
 class ASTNodeTestNode(ICanReturnBool, ICanReturnStr, ICanReturnInt, ICanReturnFloat):
     toCall: str
     
+    @override
     def toDict(self) -> dict[str, str]:
         """Convert to a dict.
         """
         return {
             "node_id": self.nodeID,
-            "to_call": "toCall"
+            "to_call": self.toCall
         }
     
+    @override
     def evaluateBool(self, a_data: dict[str, Any]) -> bool:
         return eval(self.toCall)
 
+    @override
     def evaluateStr(self, a_data: dict[str, Any]) -> str:
         return eval(self.toCall)
     
+    @override
     def evaluateInt(self, a_data: dict[str, Any]) -> int:
         return eval(self.toCall)
     
+    @override
     def evaluateFloat(self, a_data: dict[str, Any]) -> float:
         return eval(self.toCall)
     
+    @override
     def evaluateAny(self, a_data: dict[str, Any]) -> Any:
         return eval(self.toCall)
 
@@ -133,6 +147,7 @@ class ProjectTestNode(CodeTestNode):
     projectArguments: DictionaryTestNode
     projectInputs: list[str]
 
+    @override
     def toDict(self) -> dict[str, Any]:
         """Convert to a dict.
         """
@@ -148,8 +163,12 @@ class ProjectTestNode(CodeTestNode):
 class InvalidTestNode(CodeTestNode):
     data: dict[str, Any]
 
+    @override
     def toDict(self) -> dict[str, Any]:
         """Convert to a dict.
+
+        Returns:
+            (dict[str, Any]): A dictionary representation of the test node.
         """
         return {
             "node_id": self.nodeID,
@@ -162,6 +181,7 @@ class ComparisonTestNode(ICanReturnBool):
     operator: str
     right: ICanReturnAny
 
+    @override
     def toDict(self) -> dict[str, Any]:
         """Convert to a dict.
         """
@@ -172,9 +192,9 @@ class ComparisonTestNode(ICanReturnBool):
             "right": self.right.toDict()
         }
     
+    @override
     def evaluateBool(self, a_data: dict[str, Any]) -> bool:
-        left: Any = self.left.evaluateAny(a_data)
-        right: Any = self.right.evaluateAny(a_data)
+        left, right = self.left.evaluateAny(a_data), self.right.evaluateAny(a_data)
         match self.operator:
             case "GTE":
                 return left >= right
@@ -200,7 +220,8 @@ class ComparisonTestNode(ICanReturnBool):
                 return not (left or right)
         return False
     
-    def evaluateAny(self, a_data: dict[str, Any]):
+    @override
+    def evaluateAny(self, a_data: dict[str, Any]) -> Any:
         return self.evaluateBool(a_data)
 
 #region AST Related Nodes
@@ -209,6 +230,7 @@ class ASTPatternTestNode(CodeTestNode):
     nodeType: str
     pattern: ASTPattern
 
+    @override
     def toDict(self) -> dict[str, Any]:
         """Convert to a dict.
         """
@@ -223,6 +245,7 @@ class ASTWalkTestNode(CodeTestNode):
     nodeType: str
     test: ICanReturnBool
 
+    @override
     def toDict(self) -> dict[str, Any]:
         """Convert to a dict.
         """
@@ -239,6 +262,7 @@ class PostMessageTestNode(IExecutable):
     criterion: str
     nodeMessage: str
 
+    @override
     def toDict(self) -> dict[str, str]:
         """Convert to a dict.
         """
@@ -248,8 +272,8 @@ class PostMessageTestNode(IExecutable):
             "node_message": self.nodeMessage
         }
 
+    @override
     def execute(self, a_data: dict[str, Any]) -> None:
-        #print(a_data)
         eval(f"cast(\"Autograder\", a_data[\"autograder\"]).instanceData.report.postLog(\"{self.criterion}\", f\"{self.nodeMessage}\")")
 
 @dataclass
@@ -260,6 +284,7 @@ class PostGradeModifierTestNode(IExecutable):
     maxValue: float
     passes: bool
 
+    @override
     def toDict(self) -> dict[str, Any]:
         """Convert to a dict.
         """
@@ -272,23 +297,26 @@ class PostGradeModifierTestNode(IExecutable):
             "passes": self.passes
         }
 
+    @override
     def execute(self, a_data: dict[str, Any]) -> None:
-        #print(a_data)
         cast("Autograder", a_data["autograder"]).instanceData.report.addModifier(AutograderModifier(self.criterion, self.modifierType, self.modifierValue, self.maxValue, self.passes))
 
 @dataclass
 class BlockTestNode(IExecutable):
     nodes: list[IExecutable]
 
+    @override
     def toDict(self) -> dict[str, Any]:
         return {
             "node_id": self.nodeID,
             "nodes": [node.toDict() for node in self.nodes]
         }
     
+    @override
     def execute(self, a_data: dict[str, Any]) -> None:
-        for node in self.nodes:
-            node.execute(a_data)
+        [node.execute(a_data) for node in self.nodes]
+        #for node in self.nodes:
+        #    node.execute(a_data)
 #endregion
 
 @dataclass
@@ -296,8 +324,8 @@ class CodeTest:
     TestTypes: ClassVar[dict[str, Callable[[dict[str, CodeTestNode], "Autograder"], tuple[float, bool]]]] = {}
     type: str
     arguments: dict[str, CodeTestNode]
-    found: CodeTestNode|None    = None
-    notFound: CodeTestNode|None = None
+    found:    Optional[CodeTestNode] = None
+    notFound: Optional[CodeTestNode] = None
 
     @classmethod
     def fromDict(cls, a_data: dict[str, Any]) -> Self:
@@ -346,24 +374,17 @@ def parseCodeTestNode(a_node: dict[str, Any]) -> CodeTestNode:
         case {"node_id": nodeID, "nodes": nodes} if nodeID == "list":
             return ListTestNode(nodeID, [parseCodeTestNode(node) for node in nodes])
         case {"node_id": nodeID, "nodes": nodes} if nodeID == "block":
-            return BlockTestNode(nodeID, [cast(IExecutable, parseCodeTestNode(node)) for node in nodes if isinstance(parseCodeTestNode(node), IExecutable)])
+            return BlockTestNode(nodeID, [parsedNode for node in nodes if isinstance(parsedNode := parseCodeTestNode(node), IExecutable)])
         case {"node_id": nodeID, "criterion": criterion, "node_message": nodeMessage} if nodeID == "post_message":
             return PostMessageTestNode(nodeID, criterion, nodeMessage)
         case {"node_id": nodeID, "nodes": nodes} if nodeID == "dictionary" and isinstance(nodes, dict):
             return DictionaryTestNode(nodeID, {key: parseCodeTestNode(node) for key, node in nodes.items()})
-        case {"node_id": nodeID, "left": left, "operator": operator, "right": right} if nodeID == "comparison":
-            leftParsed:  CodeTestNode|ICanReturnAny = parseCodeTestNode(left)
-            rightParsed: CodeTestNode|ICanReturnAny = parseCodeTestNode(right)
-            if isinstance(leftParsed, ICanReturnAny) and isinstance(rightParsed, ICanReturnAny):
-                return ComparisonTestNode(nodeID, leftParsed, operator, rightParsed)
-        case {"node_id": nodeID, "node_type": nodeType, "test": test} if nodeID == "ast_walk":
-            testParsed: CodeTestNode|ICanReturnBool = parseCodeTestNode(test)
-            if isinstance(testParsed, ICanReturnBool):
-                return ASTWalkTestNode(nodeID, nodeType, testParsed)
-        case {"node_id": nodeID, "project_name": projectName, "project_entrypoint": projectEntrypoint, "project_arguments": projectArguments, "project_inputs": projectInputs} if nodeID == "project":
-            parsed: CodeTestNode|DictionaryTestNode = parseCodeTestNode(projectArguments)
-            if isinstance(parsed, DictionaryTestNode):
-                return ProjectTestNode(nodeID, projectName, projectEntrypoint, parsed, projectInputs)
+        case {"node_id": nodeID, "left": left, "operator": operator, "right": right} if nodeID == "comparison" and isinstance(leftParsed := parseCodeTestNode(left), ICanReturnAny) and isinstance(rightParsed := parseCodeTestNode(right), ICanReturnAny):
+            return ComparisonTestNode(nodeID, leftParsed, operator, rightParsed)
+        case {"node_id": nodeID, "node_type": nodeType, "test": test} if nodeID == "ast_walk" and isinstance(testParsed := parseCodeTestNode(test), ICanReturnBool):
+            return ASTWalkTestNode(nodeID, nodeType, testParsed)
+        case {"node_id": nodeID, "project_name": projectName, "project_entrypoint": projectEntrypoint, "project_arguments": projectArguments, "project_inputs": projectInputs} if nodeID == "project" and isinstance(parsed := parseCodeTestNode(projectArguments), DictionaryTestNode):
+            return ProjectTestNode(nodeID, projectName, projectEntrypoint, parsed, projectInputs)
         case {"node_id": nodeID, "node_type": nodeType, "pattern": pattern} if nodeID == "ast_pattern":
             return ASTPatternTestNode(nodeID, nodeType, ASTPattern.fromDict(pattern))
         case {"node_id": nodeID, "criterion": criterion, "modifier_type": modifierType, "modifier_value": modifierValue, "max_value": maxValue, "passes": passes} if nodeID == "post_grade_modifier":

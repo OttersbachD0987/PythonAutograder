@@ -1,8 +1,8 @@
-from ..code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, executeCodeTestNode, ASTWalkTestNode, ASTPatternTestNode
+from src.autograder.code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, executeCodeTestNode, ASTWalkTestNode, ASTPatternTestNode
 from subprocess import Popen, PIPE
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, Optional
 from re import Pattern
-from ..code_walker import ASTWalker
+from src.autograder.code_walker import ASTWalker
 from io import StringIO
 import re
 import difflib
@@ -15,17 +15,18 @@ if TYPE_CHECKING:
 def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> tuple[float, bool]:
     """
     """
-    VALID_OUTPUTS: tuple[str, str, str] = ("Match", "No Match", "Ignore")
-    baseProject:    ProjectTestNode|None = a_arguments["base_project"] if isinstance(a_arguments["base_project"], ProjectTestNode) else None
-    testProject:    ProjectTestNode|None = a_arguments["test_project"] if isinstance(a_arguments["test_project"], ProjectTestNode) else None
-    stdoutMode:     str = a_arguments["stdout"].literalValue      if isinstance(a_arguments["stdout"], LiteralTestNode)      and a_arguments["stdout"].literalType      == "string" and a_arguments["stdout"].literalValue      in VALID_OUTPUTS else "Match"
-    stderrMode:     str = a_arguments["stderr"].literalValue      if isinstance(a_arguments["stderr"], LiteralTestNode)      and a_arguments["stderr"].literalType      == "string" and a_arguments["stderr"].literalValue      in VALID_OUTPUTS else "Match"
-    returnCodeMode: str = a_arguments["return_code"].literalValue if isinstance(a_arguments["return_code"], LiteralTestNode) and a_arguments["return_code"].literalType == "string" and a_arguments["return_code"].literalValue in VALID_OUTPUTS else "Match"
-
     grade: int = 0
+    VALID_OUTPUTS: tuple[str, str, str] = ("Match", "No Match", "Ignore")
 
-    if testProject is None or baseProject is None:
+    baseProject: Optional[ProjectTestNode] = project if isinstance(project := a_arguments["base_project"], ProjectTestNode) else None
+    testProject: Optional[ProjectTestNode] = project if isinstance(project := a_arguments["test_project"], ProjectTestNode) else None
+
+    if not (testProject and baseProject):
         return grade, False
+    
+    stdoutMode:     str = literalValue if (isinstance(literalNode := a_arguments["stdout"],      LiteralTestNode) and literalNode.literalType == "string" and ((literalValue := literalNode.literalValue) in VALID_OUTPUTS)) else "Match"
+    stderrMode:     str = literalValue if (isinstance(literalNode := a_arguments["stderr"],      LiteralTestNode) and literalNode.literalType == "string" and ((literalValue := literalNode.literalValue) in VALID_OUTPUTS)) else "Match"
+    returnCodeMode: str = literalValue if (isinstance(literalNode := a_arguments["return_code"], LiteralTestNode) and literalNode.literalType == "string" and ((literalValue := literalNode.literalValue) in VALID_OUTPUTS)) else "Match"
     
     projectBase = a_app.instanceData.projects[baseProject.projectName]
     projectTest = a_app.instanceData.projects[testProject.projectName]
@@ -104,17 +105,16 @@ def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> 
 def assertOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> tuple[float, bool]:
     """
     """
-    testProject: ProjectTestNode|None = a_arguments["test_project"] if isinstance(a_arguments["test_project"], ProjectTestNode) else None
-
-    stdoutMode:     Pattern = re.compile(a_arguments["stdout"].literalValue      if isinstance(a_arguments["stdout"], LiteralTestNode)      and a_arguments["stdout"].literalType      == "string" else ".*")
-    stderrMode:     Pattern = re.compile(a_arguments["stderr"].literalValue      if isinstance(a_arguments["stderr"], LiteralTestNode)      and a_arguments["stderr"].literalType      == "string" else ".*")
-    returnCodeMode: Pattern = re.compile(a_arguments["return_code"].literalValue if isinstance(a_arguments["return_code"], LiteralTestNode) and a_arguments["return_code"].literalType == "string" else ".*")
-
     grade: int = 0
+    testProject: Optional[ProjectTestNode] = project if isinstance(project := a_arguments["test_project"], ProjectTestNode) else None
 
-    if testProject is None:
+    if not testProject:
         return grade, False
-    
+
+    stdoutMode:     Pattern = re.compile(literalNode.literalValue if isinstance(literalNode := a_arguments["stdout"],      LiteralTestNode) and literalNode.literalType == "string" else ".*")
+    stderrMode:     Pattern = re.compile(literalNode.literalValue if isinstance(literalNode := a_arguments["stderr"],      LiteralTestNode) and literalNode.literalType == "string" else ".*")
+    returnCodeMode: Pattern = re.compile(literalNode.literalValue if isinstance(literalNode := a_arguments["return_code"], LiteralTestNode) and literalNode.literalType == "string" else ".*")
+
     project = a_app.instanceData.projects[testProject.projectName]
 
     sub: Popen[str] = Popen(" ".join([
@@ -139,42 +139,24 @@ def assertOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> t
 
     #print(f"Return Code: {sub.returncode} : {2}")
 
-    if stdoutMode.match(stdout.strip()) is not None:
+    if stdoutMode.match(stdout.strip()):
         grade += 1
-    if stderrMode.match(stderr.strip()) is not None:
+    if stderrMode.match(stderr.strip()):
         grade += 1
-    if returnCodeMode.match(f"{sub.returncode}") is not None:
+    if returnCodeMode.match(f"{sub.returncode}"):
         grade += 1
     
     return grade / 3.0, grade == 3
 
-def walkAST(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> tuple[float, bool]:
-    """
-    """
-    #print("a")
-    testProject: ProjectTestNode|None = a_arguments["test_project"] if isinstance(a_arguments["test_project"], ProjectTestNode) else None
-    #print("b")
-    pattern: ASTPatternTestNode|None = a_arguments["pattern"] if isinstance(a_arguments["pattern"], ASTPatternTestNode) else None
-    #print("c")
-    maxGrade: int = 0
-    grade: int = 0
-
-    if not testProject or not pattern:
-        #print("Leave")
-        return grade, False
-    #print("d")
-    walker: ASTWalker = ASTWalker(pattern.pattern)
-    #print("e")
-    bon = list(filter(lambda file: file.name == testProject.projectEntrypoint, a_app.instanceData.projects[testProject.projectName].files))
-    #print(bon)
-    amount: int = walker.visit(cast("PythonFile", bon[0]).ast)
-    #print("f")
-    #print(amount)
-    return amount, amount > 0
+#def walkAST(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> tuple[float, bool]:
+#    """
+#    """
+#    return ((amount := ASTWalker(testPattern.pattern).visit(cast("PythonFile", [file for file in a_app.instanceData.projects[testProject.projectName].files if file.name == testProject.projectEntrypoint][0]).ast)), amount > 0) if (isinstance(testProject := a_arguments["test_project"], ProjectTestNode) and isinstance(testPattern := a_arguments["pattern"], ASTPatternTestNode)) else (0, False)
+    
 
 CodeTest.registerTestType("compare_output", compareOutput)
 CodeTest.registerTestType("assert_output", assertOutput)
-CodeTest.registerTestType("walk_ast", walkAST)
+CodeTest.registerTestType("walk_ast", lambda a_arguments, a_app: (((amount := ASTWalker(testPattern.pattern).visit(cast("PythonFile", [file for file in a_app.instanceData.projects[testProject.projectName].files if file.name == testProject.projectEntrypoint][0]).ast)), amount > 0) if (isinstance(testProject := a_arguments["test_project"], ProjectTestNode) and isinstance(testPattern := a_arguments["pattern"], ASTPatternTestNode)) else (0, False)))
 
 #region Outline
 ###

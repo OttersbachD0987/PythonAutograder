@@ -1,4 +1,4 @@
-from typing import Self, NamedTuple, overload, Iterator
+from typing import NamedTuple
 
 class Version(NamedTuple):
     """_summary_
@@ -11,14 +11,13 @@ class Version(NamedTuple):
     build: int
     
     @staticmethod
-    def init(a_versionString: str) -> Self:
+    def init(a_versionString: str) -> "Version":
         """_summary_
 
         Args:
             a_versionString (str): _description_
         """
-        info: map[int] = map(int, a_versionString.split("."))
-        return Version(next(info), next(info), next(info), next(info))
+        return Version(next(info := map(int, a_versionString.split("."))), next(info), next(info), next(info))
     
     def __repr__(self) -> str:
         """_summary_

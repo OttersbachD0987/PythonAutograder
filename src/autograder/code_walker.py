@@ -181,6 +181,28 @@ class ASTPattern:
                             astTo.comparisonData["test_pattern"] = ASTPattern.fromDict(a_data["test_pattern"])
                         case "test_patterns":
                             astTo.comparisonData["test_patterns"] = [ASTPattern.fromDict(testPattern) for testPattern in a_data["test_patterns"]]
+            case ASTNodeType.IF_EXP:
+                match (matchKind := (matchData := a_data.get("test_match", {"match_kind": "none"}))["match_kind"]):
+                    case "test_pattern":
+                        astTo.comparisonData["test_match"] = {"match_kind": matchKind, "test_pattern": ASTPattern.fromDict(matchData["test_pattern"])}
+                    case "test_patterns":
+                        astTo.comparisonData["test_match"] = {"match_kind": matchKind, "test_patterns": [ASTPattern.fromDict(testPattern) for testPattern in matchData["test_patterns"]]}
+                    case _:
+                        astTo.comparisonData["test_match"] = {"match_kind": matchKind}
+                match (matchKind := (matchData := a_data.get("body_match", {"match_kind": "none"}))["match_kind"]):
+                    case "test_pattern":
+                        astTo.comparisonData["body_match"] = {"match_kind": matchKind, "test_pattern": ASTPattern.fromDict(matchData["test_pattern"])}
+                    case "test_patterns":
+                        astTo.comparisonData["body_match"] = {"match_kind": matchKind, "test_patterns": [ASTPattern.fromDict(testPattern) for testPattern in matchData["test_patterns"]]}
+                    case _:
+                        astTo.comparisonData["body_match"] = {"match_kind": matchKind}
+                match (matchKind := (matchData := a_data.get("orelse_match", {"match_kind": "none"}))["match_kind"]):
+                    case "test_pattern":
+                        astTo.comparisonData["orelse_match"] = {"match_kind": matchKind, "test_pattern": ASTPattern.fromDict(matchData["test_pattern"])}
+                    case "test_patterns":
+                        astTo.comparisonData["orelse_match"] = {"match_kind": matchKind, "test_patterns": [ASTPattern.fromDict(testPattern) for testPattern in matchData["test_patterns"]]}
+                    case _:
+                        astTo.comparisonData["orelse_match"] = {"match_kind": matchKind}
             case ASTNodeType.CONSTANT:
                 if "match_kind" in a_data:
                     astTo.comparisonData["match_kind"] = a_data["match_kind"]
@@ -398,30 +420,52 @@ class ASTWalker(NodeVisitor):
             case ASTNodeType.CLASS_DEF:
                 ...
             case ASTNodeType.CMPOP:
-                ...
+                if isinstance(a_node, cmpop):
+                    return 1
             case ASTNodeType.COMPREHENSION:
-                ...
+                if isinstance(a_node, comprehension):
+                    a_node.ifs
+                    a_node.is_async
+                    a_node.iter
+                    a_node.target
+                    return 1
             case ASTNodeType.CONTINUE:
                 if isinstance(a_node, Continue):
                     return 1
             case ASTNodeType.DELETE:
-                ...
+                if isinstance(a_node, Delete):
+                    return 1
             case ASTNodeType.DICT:
-                ...
+                if isinstance(a_node, Dict):
+                    a_node.keys
+                    a_node.values
+                    return 1
             case ASTNodeType.DICT_COMP:
-                ...
+                if isinstance(a_node, DictComp):
+                    a_node.generators
+                    a_node.key
+                    a_node.value
+                    return 1
             case ASTNodeType.DIV:
-                ...
+                if isinstance(a_node, Div):
+                    return 1
             case ASTNodeType.EXCEPT_HANDLER:
-                ...
+                if isinstance(a_node, ExceptHandler):
+                    a_node.body
+                    a_node.name
+                    a_node.type
+                    return 1
             case ASTNodeType.EXPR:
                 ...
             case ASTNodeType.EXPR_CONTEXT:
                 ...
             case ASTNodeType.EXPRESSION:
-                ...
+                if isinstance(a_node, Expression):
+                    a_node.body
+                    return 1
             case ASTNodeType.FLOOR_DIV:
-                ...
+                if isinstance(a_node, FloorDiv):
+                    return 1
             case ASTNodeType.FOR:
                 ...
             case ASTNodeType.FORMATTED_VALUE:
@@ -440,11 +484,35 @@ class ASTWalker(NodeVisitor):
                                 return self.visiting(a_node.test, a_pattern.comparisonData["test_pattern"])
                             case "test_patterns":
                                 return 1 if any([0 < self.visiting(a_node.test, testPattern) for testPattern in a_pattern.comparisonData["test_patterns"]]) else 0
+                    for statement in a_node.body:
+                        ...
                     for statement in a_node.orelse:
                         ...
                     return 1
             case ASTNodeType.IF_EXP:
-                ...
+                if isinstance(a_node, IfExp):
+                    match a_pattern.comparisonData["test_match"]["match_kind"]:
+                        case "test_pattern":
+                            if self.visiting(a_node.test, a_pattern.comparisonData["test_match"]["test_pattern"]) == 0:
+                                return 0
+                        case "test_patterns":
+                            if all([0 == self.visiting(a_node.test, testPattern) for testPattern in a_pattern.comparisonData["test_match"]["test_patterns"]]):
+                                return 0
+                    match a_pattern.comparisonData.get("body_match", {"match_kind": "none"})["match_kind"]:
+                        case "test_pattern":
+                            if self.visiting(a_node.body, a_pattern.comparisonData["body_match"]["test_pattern"]) == 0:
+                                return 0
+                        case "test_patterns":
+                            if all([0 == self.visiting(a_node.body, testPattern) for testPattern in a_pattern.comparisonData["body_match"]["test_patterns"]]):
+                                return 0
+                    match a_pattern.comparisonData.get("orelse_match", {"match_kind": "none"})["match_kind"]:
+                        case "test_pattern":
+                            if self.visiting(a_node.orelse, a_pattern.comparisonData["orelse_match"]["test_pattern"]) == 0:
+                                return 0
+                        case "test_patterns":
+                            if all([0 == self.visiting(a_node.orelse, testPattern) for testPattern in a_pattern.comparisonData["orelse_match"]["test_patterns"]]):
+                                return 0
+                    return 1
             case ASTNodeType.IN:
                 if isinstance(a_node, In):
                     return 1
@@ -526,14 +594,18 @@ class ASTWalker(NodeVisitor):
             case ASTNodeType.NONLOCAL:
                 ...
             case ASTNodeType.NOT_IN:
-                ...
+                if isinstance(a_node, NotIn):
+                    return 1
             case ASTNodeType.OPERATOR:
-                ...
+                if isinstance(a_node, operator):
+                    return 1
             case ASTNodeType.OR:
                 if isinstance(a_node, Or):
                     return 1
             case ASTNodeType.PARAM_SPEC:
-                ...
+                if isinstance(a_node, ParamSpec):
+                    a_node.name
+                    return 1
             case ASTNodeType.PASS:
                 if isinstance(a_node, Pass):
                     return 1
@@ -599,13 +671,24 @@ class ASTWalker(NodeVisitor):
             case ASTNodeType.U_SUB:
                 ...
             case ASTNodeType.WITH:
-                ...
+                if isinstance(a_node, With):
+                    a_node.body
+                    a_node.items
+                    a_node.type_comment
+                    return 1
             case ASTNodeType.WITH_ITEM:
-                ...
+                if isinstance(a_node, withitem):
+                    a_node.context_expr
+                    a_node.optional_vars
+                    return 1
             case ASTNodeType.YIELD:
-                ...
+                if isinstance(a_node, Yield):
+                    a_node.value
+                    return 1
             case ASTNodeType.YIELD_FROM:
-                ...
+                if isinstance(a_node, YieldFrom):
+                    a_node.value
+                    return 1
         return 0
 
 @dataclass
@@ -616,7 +699,7 @@ class ImportData:
 class CodeWalker(NodeVisitor):
     def __init__(self, a_project: "Project", a_projectSettings: "ProjectSettings") -> None:
         self.project: "Project" = a_project
-        self.filenames = [file.name for file in a_project.files]
+        self.filenames: list[str] = [file.name for file in a_project.files]
         self.projectSettings: "ProjectSettings" = a_projectSettings
         self.imports: set[ImportData] = set()
     
@@ -648,7 +731,7 @@ def isExpressionTrue(a_node: expr) -> bool:
     elif isinstance(a_node, Compare):
         left = parseExpression(a_node)
         right = parseExpression(a_node.comparators[0])
-        if left or right == None:
+        if left == None or right == None:
             return False
         if isinstance(a_node.ops[0], Gt):
             return left > right

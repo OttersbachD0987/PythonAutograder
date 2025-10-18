@@ -13,10 +13,10 @@ from typing import Any
 # ===============================
 def main():
     instructorProjectName: str = "a" #input("Internal name to use for the project: ")
-    instructorProjectDirectory: str = "./Tests/instructor" #input("Path to instructor project directory: ")
+    instructorProjectDirectory: str = "./Tests/test" #input("Path to instructor project directory: ")
     instructorProject: Project = Project(instructorProjectName, f"{os.getcwd()}\\{instructorProjectDirectory}")
     studentProjectName: str = "b" #input("Internal name to use for the project: ")
-    studentProjectDirectory: str = "./Tests/instructor" #input("Path to student project directory: ")
+    studentProjectDirectory: str = "./Tests/test" #input("Path to student project directory: ")
     studentProject: Project = Project(studentProjectName, f"{os.getcwd()}\\{studentProjectDirectory}")
 
     grader: Autograder = Autograder()

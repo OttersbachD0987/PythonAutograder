@@ -23,7 +23,7 @@ class Extension:
         Returns:
             Self: _description_
         """
-        return Extension(
+        return cls(
             a_data.get("name", a_path),
             a_data.get("description", ""),
             a_path,
