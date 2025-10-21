@@ -3,6 +3,7 @@ from typing import ClassVar, Callable, Any, Self, TYPE_CHECKING, cast, override,
 from abc import ABC, abstractmethod
 from .code_walker import ASTPattern
 from .autograder_modifier import AutograderModifier, ModifierType
+from .code_test_type import CodeTestType, IParameterGroup
 if TYPE_CHECKING:
     from .autograder_application import Autograder
 
@@ -315,13 +316,11 @@ class BlockTestNode(IExecutable):
     @override
     def execute(self, a_data: dict[str, Any]) -> None:
         [node.execute(a_data) for node in self.nodes]
-        #for node in self.nodes:
-        #    node.execute(a_data)
 #endregion
 
 @dataclass
 class CodeTest:
-    TestTypes: ClassVar[dict[str, Callable[[dict[str, CodeTestNode], "Autograder"], tuple[float, bool]]]] = {}
+    TestTypes: ClassVar[dict[str, CodeTestType]] = {}
     type: str
     arguments: dict[str, CodeTestNode]
     found:    Optional[CodeTestNode] = None
@@ -346,22 +345,18 @@ class CodeTest:
             "arguments": {key: node.toDict() for key, node in self.arguments.items()}
         }
     
-    @classmethod
-    def registerTestType(cls, a_id: str, a_testFunction: Callable[[dict[str, CodeTestNode], "Autograder"], tuple[float, bool]]) -> None:
-        CodeTest.TestTypes[a_id] = a_testFunction
+    @staticmethod
+    def registerTestType(a_id: str, a_testFunction: Callable[[dict[str, CodeTestNode], "Autograder"], tuple[float, bool]], a_parameters: Callable[[], list[IParameterGroup]]) -> None:
+        CodeTest.TestTypes[a_id] = CodeTestType(a_id, a_testFunction, a_parameters)
     
     def runTest(self, a_grader: "Autograder", a_data: dict[str, Any]) -> tuple[float, bool]:
-        factor, success = CodeTest.TestTypes[self.type](self.arguments, a_grader)
-        a_data["factor"]  = factor
-        a_data["success"] = success
-        if success:
+        a_data["factor"], a_data["success"]= CodeTest.TestTypes[self.type].testFunction(self.arguments, a_grader)
+        if a_data["success"]:
             if self.found:
                 executeCodeTestNode(cast(IExecutable, self.found), a_data)
         elif self.notFound:
             executeCodeTestNode(cast(IExecutable, self.notFound), a_data)
-        del a_data["factor"]
-        del a_data["success"]
-        return factor, success
+        return a_data.pop("factor"), a_data.pop("success")
 
 def parseCodeTestNode(a_node: dict[str, Any]) -> CodeTestNode:
     """Parses a code test node from a dict.
@@ -388,7 +383,6 @@ def parseCodeTestNode(a_node: dict[str, Any]) -> CodeTestNode:
         case {"node_id": nodeID, "node_type": nodeType, "pattern": pattern} if nodeID == "ast_pattern":
             return ASTPatternTestNode(nodeID, nodeType, ASTPattern.fromDict(pattern))
         case {"node_id": nodeID, "criterion": criterion, "modifier_type": modifierType, "modifier_value": modifierValue, "max_value": maxValue, "passes": passes} if nodeID == "post_grade_modifier":
-            #print(f"{nodeID}:{criterion}:{modifierType}|{ModifierType(modifierType)}:{modifierValue}:{maxValue}:{passes}")
             return PostGradeModifierTestNode(nodeID, criterion, ModifierType(modifierType), modifierValue, maxValue, passes)
     return InvalidTestNode("invalid", a_node)
 

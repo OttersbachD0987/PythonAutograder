@@ -1,7 +1,8 @@
-from autograder.code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, ASTPatternTestNode
+from src.autograder.code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, ASTPatternTestNode
+from src.autograder.code_test_type import IParameterGroup, ParameterRepresentation, OptionalParameter, ExclusiveParameters
 from subprocess import Popen, PIPE
 from typing import TYPE_CHECKING, cast
-from autograder.code_walker import ASTWalker
+from src.autograder.code_walker import ASTWalker
 import re
 import difflib
 from difflib import Match
@@ -64,6 +65,12 @@ def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> 
     
     return grade / 3.0, grade == 3
 
+def compareOutputParameters() -> list[IParameterGroup]:
+    return [
+        cast(IParameterGroup, ParameterRepresentation("", "string", {})),
+        cast(IParameterGroup, ParameterRepresentation("", "string", {}))
+    ]
+
 def assertOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> tuple[float, bool]:
     """
     """
@@ -95,9 +102,12 @@ def assertOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> t
 #    return ((amount := ASTWalker(testPattern.pattern).visit(cast("PythonFile", [file for file in a_app.instanceData.projects[testProject.projectName].files if file.name == testProject.projectEntrypoint][0]).ast)), amount > 0) if (isinstance(testProject := a_arguments["test_project"], ProjectTestNode) and isinstance(testPattern := a_arguments["pattern"], ASTPatternTestNode)) else (0, False)
     
 
-CodeTest.registerTestType("compare_output", compareOutput)
-CodeTest.registerTestType("assert_output", assertOutput)
-CodeTest.registerTestType("walk_ast", lambda a_arguments, a_app: (((amount := ASTWalker(testPattern.pattern).visit(cast("PythonFile", [file for file in a_app.instanceData.projects[testProject.projectName].files if file.name == testProject.projectEntrypoint][0]).ast)), amount > 0) if (isinstance(testProject := a_arguments["test_project"], ProjectTestNode) and isinstance(testPattern := a_arguments["pattern"], ASTPatternTestNode)) else (0, False)))
+CodeTest.registerTestType("compare_output", compareOutput, compareOutputParameters)
+CodeTest.registerTestType("assert_output", assertOutput, assertOutputParameters)
+CodeTest.registerTestType(
+    "walk_ast", 
+    lambda a_arguments, a_app: (((amount := ASTWalker(testPattern.pattern).visit(cast("PythonFile", [file for file in a_app.instanceData.projects[testProject.projectName].files if file.name == testProject.projectEntrypoint][0]).ast)), amount > 0) if (isinstance(testProject := a_arguments["test_project"], ProjectTestNode) and isinstance(testPattern := a_arguments["pattern"], ASTPatternTestNode)) else (0, False)), 
+    lambda: [])
 
 #region Outline
 ###

@@ -355,7 +355,7 @@ class ASTWalker(NodeVisitor):
                     return 1
             case ASTNodeType.ALIAS:
                 if isinstance(a_node, alias):
-                    return 1 if (re.search(a_pattern.comparisonData["alias_name"], str(a_node.asname)) and re.search(a_pattern.comparisonData["imported_module"], a_node.name)) else 0
+                    return 1 if (re.search(a_pattern.comparisonData["alias_name"], cast(str, a_node.asname)) and re.search(a_pattern.comparisonData["imported_module"], a_node.name)) else 0
             case ASTNodeType.AND:
                 if isinstance(a_node, And):
                     return 1

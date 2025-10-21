@@ -3,13 +3,12 @@ from autograder.code_test import CodeTest
 from autograder.autograder_application import Autograder
 from autograder.autograder_instance_data import AutograderInstanceData
 from autograder.autograder_settings import AutograderSettings
+from autograder.project_settings import ProjectSettings, Requirement
 from enum import IntEnum, auto
 from dataclasses import dataclass
 from typing import Any
 from utils.util import intput
 import dataclasses, os
-
-from Extensions.core_tests import main
 
 class Screen(IntEnum):
     MAIN = auto()
@@ -28,6 +27,7 @@ class AppConfigState:
     screen: Screen = Screen.MAIN
     grader: Autograder = dataclasses.field(default_factory=Autograder)
     data: dict[str, Any] = dataclasses.field(default_factory=dict)
+    extraData: dict[str, Any] = dataclasses.field(default_factory=dict)
 
 def handleInput(a_app: AppConfigState):
     """Handle the input of the function.
@@ -60,18 +60,15 @@ def handleInput(a_app: AppConfigState):
                 case 1:
                     print(f"Projects:\n{"\n".join(a_app.grader.instanceData.projects.keys())}")
                 case 2:
-                    path: str = input("Path to the project folder: ")
-                    name: str = input("Name of the project: ")
-                    if os.path.isdir(path) and name not in a_app.grader.instanceData.projects:
+                    if os.path.isdir(path:= input("Path to the project folder: ")) and (name:= input("Name of the project: ")) not in a_app.grader.instanceData.projects:
                         a_app.grader.instanceData.projects[name] = Project(name, path)
+                        a_app.grader.settings.projects[name] = ProjectSettings(Requirement.ALLOWED, {}, Requirement.ALLOWED)
                 case 3:
-                    name: str = input("Name of the project to edit: ")
-                    if name in a_app.grader.instanceData.projects:
+                    if (name := input("Name of the project to edit: ")) in a_app.grader.instanceData.projects:
                         a_app.data["project_name"] = name
                         a_app.screen = Screen.EDIT_PROJECT
                 case 4:
-                    name: str = input("Name of the project to remove: ")
-                    if name in a_app.grader.instanceData.projects and input(f"Are you sure you want to remove the project {name} (Y/n): ") == "Y":
+                    if (name := input("Name of the project to remove: ")) in a_app.grader.instanceData.projects and input(f"Are you sure you want to remove the project {name} (Y/n): ") == "Y":
                         del a_app.grader.instanceData.projects[name]
                 case 5:
                     a_app.screen = Screen.MAIN
@@ -96,33 +93,60 @@ def handleInput(a_app: AppConfigState):
                 case 1:
                     print(f"Tests:\n{"\n".join(a_app.grader.settings.tests.keys())}")
                 case 2:
-                    name: str = input("Name of the test: ")
-                    if name not in a_app.grader.settings.tests:
+                    if (name := input("Name of the test: ")) not in a_app.grader.settings.tests:
                         a_app.grader.settings.tests[name] = CodeTest(name, {})
                 case 3:
-                    name: str = input("Name of the test to edit: ")
-                    if name in a_app.grader.settings.tests:
+                    if (name := input("Name of the test to edit: ")) in a_app.grader.settings.tests:
                         a_app.data["test_name"] = name
                         a_app.screen = Screen.EDIT_TEST
                 case 4:
-                    name: str = input("Name of the test to remove: ")
-                    if name in a_app.grader.settings.tests and input(f"Are you sure you want to remove the test {name} (Y/n): ") == "Y":
+                    if (name := input("Name of the test to remove: ")) in a_app.grader.settings.tests and input(f"Are you sure you want to remove the test {name} (Y/n): ") == "Y":
                         del a_app.grader.settings.tests[name]
                 case 5:
                     a_app.screen = Screen.MAIN
         case Screen.EDIT_PROJECT:
             # 1) Rename
             # 2) Back
-            match intput("Options:\n1) Rename\n2) Back\nChoice: "):
+            match intput("Options:\n1) Rename\n2) Set Import Default\n3) Set Import Override\n4) Remove Import Override\n5) Set Import Local\n6) Back\nChoice: "):
                 case 1:
-                    name: str = input("New name of the project: ")
-                    if name in a_app.grader.instanceData.projects:
+                    if (name := input("New name of the project: ")) in a_app.grader.instanceData.projects:
                         print(f"{name} is already a used name.")
                     else:
-                        a_app.grader.instanceData.projects[name] = a_app.grader.instanceData.projects[a_app.data["project_name"]]
-                        del a_app.grader.instanceData.projects[a_app.data["project_name"]]
+                        a_app.grader.instanceData.projects[name] = a_app.grader.instanceData.projects.pop(a_app.data["project_name"])
+                        a_app.grader.settings.projects[name] = a_app.grader.settings.projects.pop(a_app.data["project_name"])
                         a_app.data["project_name"] = name
                 case 2:
+                    project: ProjectSettings = a_app.grader.settings.projects[a_app.data["project_name"]]
+                    match intput("Options:\n1) Required\n2) Allowed\n3) Forbidden\n4) Back\nChoice: "):
+                        case 1:
+                            project.importDefault = Requirement.REQUIRED
+                        case 2:
+                            project.importDefault = Requirement.ALLOWED
+                        case 3:
+                            project.importDefault = Requirement.FORBIDDEN
+                case 3:
+                    project: ProjectSettings = a_app.grader.settings.projects[a_app.data["project_name"]]
+                    name: str = input("Name of the import to override: ")
+                    match intput("Options:\n1) Required\n2) Allowed\n3) Forbidden\n4) Cancel\nChoice: "):
+                        case 1:
+                            project.importOverrides[name] = Requirement.REQUIRED
+                        case 2:
+                            project.importOverrides[name] = Requirement.ALLOWED
+                        case 3:
+                            project.importOverrides[name] = Requirement.FORBIDDEN
+                case 4:
+                    if not a_app.grader.settings.projects[projectName := a_app.data["project_name"]].importOverrides.pop(name := input("Name of the import to delete: "), None):
+                        print(f"The import {name} does not exist in the project {projectName}.")
+                case 5:
+                    project: ProjectSettings = a_app.grader.settings.projects[a_app.data["project_name"]]
+                    match intput("Options:\n1) Required\n2) Allowed\n3) Forbidden\n4) Back\nChoice: "):
+                        case 1:
+                            project.importLocal = Requirement.REQUIRED
+                        case 2:
+                            project.importLocal = Requirement.ALLOWED
+                        case 3:
+                            project.importLocal = Requirement.FORBIDDEN
+                case 6:
                     a_app.screen = Screen.MANAGE_PROJECTS
                     del a_app.data["project_name"]
         case Screen.EDIT_TEST:
@@ -130,12 +154,10 @@ def handleInput(a_app: AppConfigState):
             # 2) Back
             match intput("Options:\n1) Rename\n2) Back\nChoice: "):
                 case 1:
-                    name: str = input("New name of the Test: ")
-                    if name in a_app.grader.settings.tests:
+                    if (name := input("New name of the Test: ")) in a_app.grader.settings.tests:
                         print(f"{name} is already a used name.")
                     else:
-                        a_app.grader.settings.tests[name] = a_app.grader.settings.tests[a_app.data["test_name"]]
-                        del a_app.grader.settings.tests[a_app.data["test_name"]]
+                        a_app.grader.settings.tests[name] = a_app.grader.settings.tests.pop(a_app.data["test_name"])
                         a_app.data["test_name"] = name
                 case 2:
                     a_app.screen = Screen.MANAGE_TESTS
@@ -145,12 +167,10 @@ def handleInput(a_app: AppConfigState):
             # 2) Back
             match intput("Options:\n1) Rename\n2) Back\nChoice: "):
                 case 1:
-                    name: str = input("New name of the project: ")
-                    if name in a_app.grader.instanceData.projects:
+                    if (name := input("New name of the project: ")) in a_app.grader.instanceData.projects:
                         print(f"{name} is already a used name.")
                     else:
-                        a_app.grader.instanceData.projects[name] = a_app.grader.instanceData.projects[a_app.data["project_name"]]
-                        del a_app.grader.instanceData.projects[a_app.data["project_name"]]
+                        a_app.grader.instanceData.projects[name] = a_app.grader.instanceData.projects.pop(a_app.data["project_name"])
                         a_app.data["project_name"] = name
                 case 2:
                     a_app.screen = Screen.MANAGE_CRITERIA
@@ -162,7 +182,9 @@ def handleInput(a_app: AppConfigState):
 # ===============================
 if __name__ == "__main__":
     app: AppConfigState = AppConfigState()
-
+    app.grader.extension_manager.loadFromDirectory("./Extensions")
+    app.grader.extension_manager.importExtensions()
+    app.extraData = {"autograder": app.grader}
 
     while app.run:
         handleInput(app)
