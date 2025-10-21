@@ -67,8 +67,30 @@ def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> 
 
 def compareOutputParameters() -> list[IParameterGroup]:
     return [
-        cast(IParameterGroup, ParameterRepresentation("", "string", {})),
-        cast(IParameterGroup, ParameterRepresentation("", "string", {}))
+        cast(IParameterGroup, ParameterRepresentation("type", "string", {})),
+        cast(IParameterGroup, ParameterRepresentation("base_project", "ProjectTestNode", {
+            "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
+            "project_name": cast(IParameterGroup, ParameterRepresentation("project_name", "string", {})),
+            "project_entrypoint": cast(IParameterGroup, ParameterRepresentation("project_entrypoint", "string", {})),
+            "project_arguments": cast(IParameterGroup, ParameterRepresentation("project_arguments", "DictTestNode", {
+                "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
+                "nodes": cast(IParameterGroup, ParameterRepresentation("nodes", "dict[str, CodeTestNode]", {})),
+            })),
+            "project_inputs": cast(IParameterGroup, ParameterRepresentation("project_inputs", "list[string]", {})),
+        })),
+        cast(IParameterGroup, ParameterRepresentation("test_project", "ProjectTestNode", {
+            "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
+            "project_name": cast(IParameterGroup, ParameterRepresentation("project_name", "string", {})),
+            "project_entrypoint": cast(IParameterGroup, ParameterRepresentation("project_entrypoint", "string", {})),
+            "project_arguments": cast(IParameterGroup, ParameterRepresentation("project_arguments", "DictTestNode", {
+                "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
+                "nodes": cast(IParameterGroup, ParameterRepresentation("nodes", "dict[str, CodeTestNode]", {})),
+            })),
+            "project_inputs": cast(IParameterGroup, ParameterRepresentation("project_inputs", "list[string]", {})),
+        })),
+        cast(IParameterGroup, ParameterRepresentation("stdout", "string", {})),
+        cast(IParameterGroup, ParameterRepresentation("stderr", "string", {})),
+        cast(IParameterGroup, ParameterRepresentation("return_code", "string", {}))
     ]
 
 def assertOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> tuple[float, bool]:
