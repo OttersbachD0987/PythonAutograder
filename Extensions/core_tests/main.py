@@ -96,6 +96,12 @@ def assertOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> t
         
     return grade / 3.0, grade == 3
 
+def assertOutputParameters() -> list[IParameterGroup]:
+    return [
+        cast(IParameterGroup, ParameterRepresentation("", "string", {})),
+        cast(IParameterGroup, ParameterRepresentation("", "string", {}))
+    ]
+
 #def walkAST(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> tuple[float, bool]:
 #    """
 #    """
@@ -107,7 +113,10 @@ CodeTest.registerTestType("assert_output", assertOutput, assertOutputParameters)
 CodeTest.registerTestType(
     "walk_ast", 
     lambda a_arguments, a_app: (((amount := ASTWalker(testPattern.pattern).visit(cast("PythonFile", [file for file in a_app.instanceData.projects[testProject.projectName].files if file.name == testProject.projectEntrypoint][0]).ast)), amount > 0) if (isinstance(testProject := a_arguments["test_project"], ProjectTestNode) and isinstance(testPattern := a_arguments["pattern"], ASTPatternTestNode)) else (0, False)), 
-    lambda: [])
+    lambda: [
+        cast(IParameterGroup, ParameterRepresentation("", "string", {})),
+        cast(IParameterGroup, ParameterRepresentation("", "string", {}))
+    ])
 
 #region Outline
 ###
