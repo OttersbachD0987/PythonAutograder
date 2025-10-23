@@ -6,9 +6,9 @@ from typing import Any, cast
 
 @dataclass
 class AutograderSettings:
-    projects: dict[str, ProjectSettings] = dataclasses.field(default_factory=dict)
-    tests:    dict[str, CodeTest]        = dataclasses.field(default_factory=dict)
-    criteria: dict[str, float]           = dataclasses.field(default_factory=dict)
+    projects: dict[str, ProjectSettings] = dataclasses.field(default_factory=dict) # type: ignore
+    tests:    dict[str, CodeTest]        = dataclasses.field(default_factory=dict) # type: ignore
+    criteria: dict[str, float]           = dataclasses.field(default_factory=dict) # type: ignore
 
     def updateFromDict(self, a_data: dict[str, Any]) -> None:
         self.projects = {key: ProjectSettings.fromDict(project) for key, project in cast(dict[str, Any], a_data["projects"]).items()}

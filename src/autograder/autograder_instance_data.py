@@ -13,5 +13,5 @@ if TYPE_CHECKING:
 class AutograderInstanceData:
     """The instance data of an autograder.
     """
-    projects: dict[str, Project] = dataclasses.field(default_factory=dict)
+    projects: dict[str, Project] = dataclasses.field(default_factory=dict) # type: ignore
     report: AutograderReport = dataclasses.field(default_factory=AutograderReport)

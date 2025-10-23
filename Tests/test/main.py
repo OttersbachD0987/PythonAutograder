@@ -1,22 +1,4 @@
-import csv
+with open("foo.txt", "w") as file:
+    file.write("And that's how it is.")
 
-for i in range(4):
-    print(f"{i}: i")
-
-a = input("Bokn: ")
-
-print(" M  ")
-
-print(a)
-
-print(" M  ")
-
-b = input("NB: ")
-
-print(" V  ")
-
-print(b + a)
-
-print(" V  ")
-
-raise TabError()
+print("Done.")

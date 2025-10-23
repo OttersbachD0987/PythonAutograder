@@ -26,6 +26,8 @@ class ExtensionManager:
             #    exec(extensionFile.read())
             #print([dir.path for dir in os.scandir(f"{extension.path}") if dir.is_dir()])
             spec = importlib.util.spec_from_file_location(extension_id, f"{extension.path}/main.py") # , submodule_search_locations=[dir.path for dir in os.scandir(f"{extension.path}") if dir.is_dir()]
+            if spec is None or spec.loader is None:
+                continue
             module = importlib.util.module_from_spec(spec)
             sys.modules[extension_id] = module
             spec.loader.exec_module(module)

@@ -14,6 +14,8 @@ def getFiles(a_dir: str) -> list["FileType"]:
             match fileDescriptor.name.split(".")[-1]:
                 case "py":
                     toReturn.append(PythonFile(fileDescriptor.path.removesuffix(fileDescriptor.name).rstrip("\\"), fileDescriptor.name))
+                case _:
+                    ...
     return toReturn
 
 def tryGetCast[K, V, T](a_dict: dict[K, V], a_key: K, a_converter: Callable[[V], T], a_default: T) -> T:

@@ -22,9 +22,9 @@ class RubricGrade(NamedTuple):
 
 @dataclass
 class AutograderReport:
-    messages:  dict[str, list[tuple[int, str]]] = dataclasses.field(default_factory=dict)
-    modifiers: list[AutograderModifier]         = dataclasses.field(default_factory=list)
-    final:     dict[str, FinalModifier]         = dataclasses.field(default_factory=dict)
+    messages:  dict[str, list[tuple[int, str]]] = dataclasses.field(default_factory=dict) # type: ignore
+    modifiers: list[AutograderModifier]         = dataclasses.field(default_factory=list) # type: ignore
+    final:     dict[str, FinalModifier]         = dataclasses.field(default_factory=dict) # type: ignore
 
     def postLog(self, a_criterion: str, a_message: str) -> None:
         self.messages[a_criterion] = [*self.messages.get(a_criterion, []), (time.time_ns(), a_message)]

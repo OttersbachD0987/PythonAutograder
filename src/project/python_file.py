@@ -1,5 +1,5 @@
 import ast
-from ast import Module, Import, ImportFrom
+from ast import Module, Import
 import symtable
 from symtable import SymbolTable
 import tokenize
@@ -51,3 +51,4 @@ class PythonFile(FileType):
     
     def __repr__(self):
         return f"{self.path} | {self.name}"
+    

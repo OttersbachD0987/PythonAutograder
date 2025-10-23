@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, cast
 from autograder.code_walker import ASTWalker
 import re
 import difflib
-from difflib import Match
 
 if TYPE_CHECKING:
     from src.autograder.autograder_application import Autograder
@@ -55,6 +54,8 @@ def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: Autograder) -> tu
                 grade += difflib.SequenceMatcher(None, stdoutBase, stdoutTest).ratio()
             case "No Match" if stdoutBase != stdoutTest:
                 grade += 1
+            case _:
+                ...
 
         match (value if (isinstance(node := a_arguments["stderr"], LiteralTestNode) and node.literalType == "string" and ((value := node.literalValue) in VALID_COMPARE_MATCHES)) else "Match"):
             case "Ignore":
@@ -65,6 +66,8 @@ def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: Autograder) -> tu
                 grade += difflib.SequenceMatcher(None, stderrBase, stderrTest).ratio()
             case "No Match" if stderrBase != stderrTest:
                 grade += 1
+            case _:
+                ...
 
         match (value if (isinstance(node := a_arguments["return_code"], LiteralTestNode) and node.literalType == "string" and ((value := node.literalValue) in VALID_COMPARE_MATCHES)) else "Match"):
             case "Ignore":
@@ -73,6 +76,8 @@ def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: Autograder) -> tu
                 grade += 1
             case "No Match" if subBase.returncode != subTest.returncode:
                 grade += 1
+            case _:
+                ...
     
     return grade / 3.0, grade == 3
 
@@ -135,6 +140,56 @@ def assertOutputParameters() -> list[IParameterGroup]:
         cast(IParameterGroup, ParameterRepresentation("", "string", {}))
     ]
 
+VALID_FILE_MATCHES: set[str] = {"Match", "Diff", "No Match"}
+
+def compareFiles(a_arguments: dict[str, CodeTestNode], a_app: Autograder) -> tuple[float, bool]:
+    grade: float = 0
+    
+    if isinstance(baseProject := a_arguments["base_project"], ProjectTestNode) and isinstance(testProject := a_arguments["test_project"], ProjectTestNode) and (isinstance(baseFile := a_arguments["base_file"], LiteralTestNode) and baseFile.literalType == "string") and (isinstance(testFile := a_arguments["test_file"], LiteralTestNode) and testFile.literalType == "string"):
+        baseContents: str = ""
+        with open(f"{a_app.instanceData.projects[baseProject.projectName].dir}\\{baseFile.literalValue}") as file:
+            baseContents = file.read()
+            
+        testContents: str = ""
+        with open(f"{a_app.instanceData.projects[testProject.projectName].dir}\\{testFile.literalValue}") as file:
+            testContents = file.read()
+        
+        match (value if (isinstance(node := a_arguments["match"], LiteralTestNode) and node.literalType == "string" and ((value := node.literalValue) in VALID_FILE_MATCHES)) else "Match"):
+            case "Match"    if baseContents == testContents:
+                grade += 1
+            case "Diff":
+                grade += difflib.SequenceMatcher(None, baseContents, testContents).ratio()
+            case "No Match" if baseContents != testContents:
+                grade += 1
+            case _:
+                ...
+    
+    return grade, grade == 1
+
+def compareFilesParameters() -> list[IParameterGroup]:
+    return [
+    ]
+
+def assertFile(a_arguments: dict[str, CodeTestNode], a_app: Autograder) -> tuple[float, bool]:
+    """
+    """
+    grade: int = 0
+    if isinstance(testProject := a_arguments["test_project"], ProjectTestNode) and (isinstance(testFile := a_arguments["test_file"], LiteralTestNode) and testFile.literalType == "string"):
+        content: str = ""
+        with open(f"{a_app.instanceData.projects[testProject.projectName].dir}\\{testFile.literalValue}") as file:
+            content = file.read()
+
+        if re.match(node.literalValue if isinstance(node := a_arguments["match"], LiteralTestNode) and node.literalType == "string" else ".*", content):
+            grade += 1
+        
+    return grade, grade == 1
+
+def assertFileParameters() -> list[IParameterGroup]:
+    return [
+        cast(IParameterGroup, ParameterRepresentation("", "string", {})),
+        cast(IParameterGroup, ParameterRepresentation("", "string", {}))
+    ]
+
 #def walkAST(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> tuple[float, bool]:
 #    """
 #    """
@@ -150,6 +205,8 @@ CodeTest.registerTestType(
         cast(IParameterGroup, ParameterRepresentation("", "string", {})),
         cast(IParameterGroup, ParameterRepresentation("", "string", {}))
     ])
+CodeTest.registerTestType("compare_files", compareFiles, compareFilesParameters)
+CodeTest.registerTestType("assert_file", assertFile, assertFileParameters)
 
 #region Outline
 ###

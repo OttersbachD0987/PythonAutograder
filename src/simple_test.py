@@ -9,14 +9,14 @@ from typing import Any
 # ===============================
 def main():
     program1Name: str = "program_one"
-    program1Directory: str = "Tests\\program1_auto_grader"
+    program1Directory: str = "Tests\\test"
     program1: Project = Project(program1Name, f"{os.getcwd()}\\{program1Directory}")
     program2Name: str = "program_two"
-    program2Directory: str = "Tests\\program2"
+    program2Directory: str = "Tests\\test"
     program2: Project = Project(program2Name, f"{os.getcwd()}\\{program2Directory}")
     
-    entrypointOne: str = "no_errors.py"
-    entrypointTwo: str = "program2_solution.py"
+    entrypointOne: str = "main.py"
+    entrypointTwo: str = "main.py"
 
     grader: Autograder = Autograder()
     grader.setConfigurationFromDict({
@@ -174,6 +174,80 @@ def main():
                         {
                             "node_id": "post_grade_modifier",
                             "criterion": "output",
+                            "modifier_type": "addition",
+                            "modifier_value": {
+                                "node_id": "ast_node",
+                                "to_call": "a_data[\"factor\"]"
+                            },
+                            "max_value": 1,
+                            "passes": False
+                        }
+                    ]
+                }
+            },
+            "func": {
+                "type": "compare_files",
+                "arguments": {
+                    "base_project": {
+                        "node_id": "project",
+                        "project_name": program1Name,
+                        "project_entrypoint": entrypointOne,
+                        "project_arguments": {
+                            "node_id": "dictionary",
+                            "nodes": {}
+                        },
+                        "project_inputs": []
+                    },
+                    "test_project": {
+                        "node_id": "project",
+                        "project_name": program1Name,
+                        "project_entrypoint": entrypointOne,
+                        "project_arguments": {
+                            "node_id": "dictionary",
+                            "nodes": {}
+                        },
+                        "project_inputs": []
+                    },
+                    "base_file": {
+                        "node_id": "literal",
+                        "literal_type": "string",
+                        "literal_value": "bonk.txt"
+                    },
+                    "test_file": {
+                        "node_id": "literal",
+                        "literal_type": "string",
+                        "literal_value": "foo.txt"
+                    },
+                    "match": {
+                        "node_id": "literal",
+                        "literal_type": "string",
+                        "literal_value": "Diff"
+                    }
+                },  #key: node.ToDict() for key, node in self.arguments.items()
+                "found": {
+                    "node_id": "block",
+                    "nodes": [
+                        {
+                            "node_id": "post_grade_modifier",
+                            "criterion": "variables",
+                            "modifier_type": "addition",
+                            "modifier_value": 1,
+                            "max_value": 1,
+                            "passes": True
+                        }
+                    ]
+                },
+                "notFound": {
+                    "node_id": "block",
+                    "nodes": [
+                        {
+                            "node_id": "post_message",
+                            "criterion": "variables",
+                            "node_message": "Variables named incorrectly."
+                        },
+                        {
+                            "node_id": "post_grade_modifier",
+                            "criterion": "variables",
                             "modifier_type": "addition",
                             "modifier_value": {
                                 "node_id": "ast_node",
@@ -560,7 +634,7 @@ def main():
             "output": 50,
             "functions": 10,
             "psuedocode":5,
-            "variables": 5,
+            "variables": 100,
         }   #self.criteria
     })
     
@@ -582,10 +656,11 @@ def main():
         option = int(input("Option: "))
         match option:
             case 1:
-                grader.settings.tests["no_errors_while"].runTest(grader, data)
-                grader.settings.tests["first_comparison"].runTest(grader, data)
-                grader.settings.tests["no_errors_variables"].runTest(grader, data)
-                grader.settings.tests["no_errors_functions"].runTest(grader, data)
+                grader.settings.tests["func"].runTest(grader, data)
+                #grader.settings.tests["no_errors_while"].runTest(grader, data)
+                #grader.settings.tests["first_comparison"].runTest(grader, data)
+                #grader.settings.tests["no_errors_variables"].runTest(grader, data)
+                #grader.settings.tests["no_errors_functions"].runTest(grader, data)
             case 2:
                 grader.settings.tests["program2_while"].runTest(grader, data)
                 grader.settings.tests["second_comparison"].runTest(grader, data)

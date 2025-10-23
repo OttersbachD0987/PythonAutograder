@@ -35,7 +35,7 @@ def main():
         "autograder": grader
     }
 
-    while screen != Screen.EXIT:
+    while screen != Screen.EXIT: # type: ignore
         match screen:
             case Screen.MAIN:
                 print("|-------------------------<=    MENU    =>-------------------------|")
@@ -55,6 +55,8 @@ def main():
                         screen = Screen.RESULTS
                     case 5:
                         screen = Screen.EXIT
+                    case _:
+                        print("Invalid choice.")
             case Screen.PROJECTS:
                 print("|-------------------------<=  PROJECTS  =>-------------------------|")
                 print("\n[======>------------------<==============>------------------<======]\n".join([f"Name: {project.name}\n{"\n".join(textwrap.wrap(project.dir, 68))}\n\n{grader.settings.projects.get(project.name, grader.settings.projects["default"])}" for project in grader.instanceData.projects.values()]))
@@ -77,6 +79,8 @@ def main():
                             print(f"There is no project named {name}.")
                     case 4:
                         screen = Screen.MAIN
+                    case _:
+                        print("Invalid choice.")
             case Screen.PROJECT_SETTINGS:
                 grader.settings.projects[project.name] = (projectSettings := grader.settings.projects.get((project := grader.instanceData.projects[context]).name, grader.settings.projects["default"].copy()))
                 print("|-------------------------<=  SETTINGS  =>-------------------------|")
@@ -127,13 +131,13 @@ def main():
                     case 5:
                         context = ""
                         screen = Screen.PROJECTS
-                                
+                    case _:
+                        print("Invalid choice.")
             case Screen.TESTS:
                 print("|-------------------------<= CODE TESTS =>-------------------------|")
                 print("\n".join([f"[{"X" if testID in testsToRun else " "}] {testID}\n      > {test.type}" for testID, test in grader.settings.tests.items()]))
                 print("+------------------------------------------------------------------+")
                 print("1) Toggle Test")
-                #print("2) ")
                 print("2) Back\n")
                 match intput("Choice: "):
                     case 1:
@@ -146,6 +150,8 @@ def main():
                             print(f"There is no test named {test}.")
                     case 2:
                         screen = Screen.MAIN
+                    case _:
+                        print("Invalid choice.")
             case Screen.CRITERIA:
                 print("|-------------------------<=  CRITERIA  =>-------------------------|")
                 print("\n".join([f"{key}: {value}" for key, value in grader.settings.criteria.items()]))
@@ -162,6 +168,8 @@ def main():
                             print(f"There is no criteria named {criteria}.")
                     case 3:
                         screen = Screen.MAIN
+                    case _:
+                        print("Invalid choice.")
             case Screen.RESULTS:
                 [grader.settings.tests[test].runTest(grader, data) for test in testsToRun]
                 returned: tuple[str, float, str]|None = grader.instanceData.report.proccessModifiers()
