@@ -4,15 +4,17 @@ from enum import IntEnum, auto
 from project.project import Project
 from utils.util import intput
 from autograder.autograder_application import Autograder
+from autograder.project_settings import Requirement
 from typing import Any
 
 class Screen(IntEnum):
-    MAIN     = auto()
-    PROJECTS = auto()
-    TESTS    = auto()
-    CRITERIA = auto()
-    RESULTS  = auto()
-    EXIT     = auto()
+    MAIN             = auto()
+    PROJECTS         = auto()
+    PROJECT_SETTINGS = auto()
+    TESTS            = auto()
+    CRITERIA         = auto()
+    RESULTS          = auto()
+    EXIT             = auto()
 
 # ===============================
 # MAIN EXECUTION
@@ -26,11 +28,13 @@ def main():
     grader.extension_manager.loadFromDirectory("./Extensions")
     grader.extension_manager.importExtensions()
 
+    context: str = ""
     testsToRun: list[str] = []
 
     data: dict[str, Any] = {
         "autograder": grader
     }
+
     while screen != Screen.EXIT:
         match screen:
             case Screen.MAIN:
@@ -53,11 +57,12 @@ def main():
                         screen = Screen.EXIT
             case Screen.PROJECTS:
                 print("|-------------------------<=  PROJECTS  =>-------------------------|")
-                print("\n[======>------------------<==============>------------------<======]\n".join([f"{project.name}\n{"\n".join(textwrap.wrap(project.dir, 68))}" for project in grader.instanceData.projects.values()]))
+                print("\n[======>------------------<==============>------------------<======]\n".join([f"Name: {project.name}\n{"\n".join(textwrap.wrap(project.dir, 68))}\n\n{grader.settings.projects.get(project.name, grader.settings.projects["default"])}" for project in grader.instanceData.projects.values()]))
                 print("+------------------------------------------------------------------+")
                 print("1) Add Project")
                 print("2) Remove Project")
-                print("3) Back\n")
+                print("3) Edit Project Settings")
+                print("4) Back\n")
                 match intput("Choice: "):
                     case 1:
                         grader.instanceData.projects[internalName] = Project(internalName := input("Internal name to use for the project: "), f"{os.getcwd()}\\{input("Path to the project root directory: ")}")
@@ -65,7 +70,64 @@ def main():
                         if grader.instanceData.projects.pop(deleteName := input("Internal name of the project to remove: "), None) is None:
                             print(f"There is no project named {deleteName}.")
                     case 3:
+                        if (name := input("Internal name of the project whose settings to edit: ")) in grader.instanceData.projects:
+                            context = name
+                            screen = Screen.PROJECT_SETTINGS
+                        else:
+                            print(f"There is no project named {name}.")
+                    case 4:
                         screen = Screen.MAIN
+            case Screen.PROJECT_SETTINGS:
+                grader.settings.projects[project.name] = (projectSettings := grader.settings.projects.get((project := grader.instanceData.projects[context]).name, grader.settings.projects["default"].copy()))
+                print("|-------------------------<=  SETTINGS  =>-------------------------|")
+                print(f"Name: {project.name}\n{"\n".join(textwrap.wrap(project.dir, 68))}\n\n{projectSettings}")
+                print("+------------------------------------------------------------------+")
+                print("1) Set Import Default")
+                print("2) Set Import Override")
+                print("3) Remove Import Override")
+                print("4) Set Import Local")
+                print("5) Back")
+
+
+                match intput("Choice: "):
+                    case 1:
+                        match input("New Requirement (Required/Allowed/Forbidden): ").lower().strip():
+                            case "required":
+                                projectSettings.importDefault = Requirement.REQUIRED
+                            case "allowed":
+                                projectSettings.importDefault = Requirement.ALLOWED
+                            case "forbidden":
+                                projectSettings.importDefault = Requirement.FORBIDDEN
+                            case _ as requirement:
+                                print(f"{requirement.upper()} is not a valid Requirement type (Required/Allowed/Forbidden).")
+                    case 2:
+                        name: str = input("Name of import to override: ")
+                        match input("New Requirement (Required/Allowed/Forbidden): ").lower().strip():
+                            case "required":
+                                projectSettings.importOverrides[name] = Requirement.REQUIRED
+                            case "allowed":
+                                projectSettings.importOverrides[name] = Requirement.ALLOWED
+                            case "forbidden":
+                                projectSettings.importOverrides[name] = Requirement.FORBIDDEN
+                            case _ as requirement:
+                                print(f"{requirement.upper()} is not a valid Requirement type (Required/Allowed/Forbidden).")
+                    case 3:
+                        if projectSettings.importOverrides.pop(name := input("Name of import to remove: "), None) is None:
+                            print(f"There is no import override named {name}.")
+                    case 4:
+                        match input("New Requirement (Required/Allowed/Forbidden): ").lower().strip():
+                            case "required":
+                                projectSettings.importLocal = Requirement.REQUIRED
+                            case "allowed":
+                                projectSettings.importLocal = Requirement.ALLOWED
+                            case "forbidden":
+                                projectSettings.importLocal = Requirement.FORBIDDEN
+                            case _ as requirement:
+                                print(f"{requirement.upper()} is not a valid Requirement type (Required/Allowed/Forbidden).")
+                    case 5:
+                        context = ""
+                        screen = Screen.PROJECTS
+                                
             case Screen.TESTS:
                 print("|-------------------------<= CODE TESTS =>-------------------------|")
                 print("\n".join([f"[{"X" if testID in testsToRun else " "}] {testID}\n      > {test.type}" for testID, test in grader.settings.tests.items()]))
@@ -103,12 +165,11 @@ def main():
             case Screen.RESULTS:
                 [grader.settings.tests[test].runTest(grader, data) for test in testsToRun]
                 returned: tuple[str, float, str]|None = grader.instanceData.report.proccessModifiers()
-                print(returned)
-
                 print("|-------------------------<=   RESULT   =>-------------------------|")
+                print("====== Rubric ======")
                 print(f"{'Criterion':<20} {'Passed':<8} {'Weight':<6} {'Points':<6} Feedback")
 
-                print("-"*80)
+                print("-"*68)
                 normalValue: float = 0
                 maxValue: float = 0
                 if returned:
@@ -118,9 +179,10 @@ def main():
                         normalValue += amount
                         maxValue += maxAmount
                         print(f"{criterion:<20} {str(passes):<8} {grader.settings.criteria[criterion]:<6} {amount:<6} {message}")
-                print("\n=== Final Grade ===")
+                print("\n=== Final Grades ===")
                 print(f"Score: {normalValue}/{maxValue} (Breakdown: {grader.settings.criteria})")
-                input()
+                input("\nContinue")
+                screen = Screen.MAIN
 
 if __name__ == "__main__":
     main()

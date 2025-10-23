@@ -8,7 +8,16 @@ class Requirement(IntEnum):
     ALLOWED   = auto()
     FORBIDDEN = auto()
 
-@dataclass
+    def __repr__(self) -> str:
+        match self:
+            case Requirement.REQUIRED:
+                return "Required"
+            case Requirement.ALLOWED:
+                return "Allowed"
+            case Requirement.FORBIDDEN:
+                return "Forbidden"
+
+@dataclass(repr=False)
 class ProjectSettings:
     importDefault: Requirement
     importOverrides: dict[str, Requirement]
@@ -51,3 +60,9 @@ class ProjectSettings:
             },
             "import_local": int(self.importLocal)
         }
+    
+    def copy(self) -> "ProjectSettings":
+        return ProjectSettings(self.importDefault, self.importOverrides.copy(), self.importLocal)
+    
+    def __repr__(self) -> str:
+        return f"Import Default: {repr(self.importDefault)}\nImport Overrides: \n{"\n".join([f"  {key}: {repr(requirement)}" for key, requirement in self.importOverrides.items()])}\nImport Local: {repr(self.importLocal)}"
