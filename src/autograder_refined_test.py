@@ -1,17 +1,21 @@
 import os
 import textwrap
+import json
 from enum import IntEnum, auto
 from project.project import Project
 from utils.util import intput
 from autograder.autograder_application import Autograder
 from autograder.project_settings import Requirement
-from typing import Any
+from autograder.code_test_type import IParameterGroup, ParameterRepresentation
+from autograder.code_test import CodeTestType, CodeTest, DictionaryTestNode, LiteralTestNode, ListTestNode, ProjectTestNode, CodeTestNode
+from typing import Any, cast
 
 class Screen(IntEnum):
     MAIN             = auto()
     PROJECTS         = auto()
     PROJECT_SETTINGS = auto()
     TESTS            = auto()
+    TESTS_SETTINGS   = auto()
     CRITERIA         = auto()
     RESULTS          = auto()
     EXIT             = auto()
@@ -138,16 +142,90 @@ def main():
                 print("\n".join([f"[{"X" if testID in testsToRun else " "}] {testID}\n      > {test.type}" for testID, test in grader.settings.tests.items()]))
                 print("+------------------------------------------------------------------+")
                 print("1) Toggle Test")
+                print("2) Import Tests")
+                print("3) Remove Test")
+                print("4) Edit Test")
+                print("5) Back\n")
+                match intput("Choice: "):
+                    case 1:
+                        if (testType := input("Name of the test to toggle: ")) in grader.settings.tests:
+                            if testType in testsToRun:
+                                testsToRun.remove(testType)
+                            else:
+                                testsToRun.append(testType)
+                        else:
+                            print(f"There is no test named {testType}.")
+                    case 2:
+                        if os.path.isfile(filepath := input("Path to the file with the tests: ")):
+                            with open(filepath) as file:
+                                grader.settings.addTests(json.load(file))
+                    case 3:
+                        if grader.settings.tests.pop(testType := input("Name of the test: "), None) is None:
+                            print(f"There is no test named {testType}.")
+                    case 4:
+                        if (name := input("Name of the test to edit: ")) in grader.settings.tests:
+                            context = name
+                            screen = Screen.TESTS_SETTINGS
+                        else:
+                            print(f"There is no project named {name}.")
+                    case 5:
+                        screen = Screen.MAIN
+                    case _:
+                        print("Invalid choice.")
+            case Screen.TESTS_SETTINGS:
+                print("|-------------------------<=  SETTINGS  =>-------------------------|")
+                print(f"[{"X" if context in testsToRun else " "}] {context}\n      > {(testType := (test := grader.settings.tests[context]).type)}")
+                displayParams: list[IParameterGroup] = CodeTest.TestTypes[testType].parameters()
+                uses: dict[str, CodeTestNode] = {}
+                for param in displayParams:
+                    if isinstance(param, ParameterRepresentation):
+                        match param.kind:
+                            case "ProjectTestNode":
+                                uses.setdefault((projectNode := cast(ProjectTestNode, cast(DictionaryTestNode, test.arguments).nodes[param.id])).nodeID, projectNode)
+                                print(f"{projectNode.nodeID}: \n  Project Target: {projectNode.projectName}\n  Project Entrypoint: {projectNode.projectEntrypoint}\n  Inputs:\n    {"\n    ".join([f"{index}: {value}" for index, value in enumerate(projectNode.projectInputs)])}")
+                            case "string":
+                                uses.setdefault((literalNode := cast(LiteralTestNode, cast(DictionaryTestNode, test.arguments).nodes[param.id])).nodeID, literalNode)
+                                print(f"{literalNode.nodeID} ({literalNode.literalType}): {literalNode.literalValue}")
+                            case _:
+                                ...
+                print("+------------------------------------------------------------------+")
+                print("1) Edit Value")
                 print("2) Back\n")
                 match intput("Choice: "):
                     case 1:
-                        if (test := input("Name of the test to toggle: ")) in grader.settings.tests:
-                            if test in testsToRun:
-                                testsToRun.remove(test)
-                            else:
-                                testsToRun.append(test)
+                        if (name := input("Name of the value to edit: ")) in uses:
+                            node: CodeTestNode = uses[name]
+                            print("Properties:")
+                            if isinstance(node, ProjectTestNode):
+                                option: int = 0
+                                print("1) Project Target\n2) Project Entrypoint\n3) Inputs\n4) Cancel\n")
+                                while option != 4:
+                                    match (option := intput("Property to set: ")):
+                                        case 1:
+                                            node.projectName = input("New Project Target: ")
+                                        case 2:
+                                            node.projectEntrypoint = input("New Project Entrypoint: ")
+                                        case 3:
+                                            print("\nEdit Options:\n1) Insert Input\n2) Remove Input\n3) Cancel\n")
+                                            innerOption: int = 0
+                                            while innerOption != 3:
+                                                match (innerOption := intput("Choice: ")):
+                                                    case 1:
+                                                        node.projectInputs.insert(intput("Index to insert at: "), input("The value to insert: "))
+                                                    case 2:
+                                                        node.projectInputs.pop(intput("Index of the input to remove: "))
+                                                    case 3:
+                                                        ...
+                                                    case _:
+                                                        ...
+                                        case 4:
+                                            ...
+                                        case _:
+                                            ...
+                            elif isinstance(node, LiteralTestNode):
+                                ...
                         else:
-                            print(f"There is no test named {test}.")
+                            print(f"There is no value named {name}.")
                     case 2:
                         screen = Screen.MAIN
                     case _:

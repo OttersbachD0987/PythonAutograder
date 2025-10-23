@@ -15,6 +15,9 @@ class AutograderSettings:
         self.tests = {key: CodeTest.fromDict(test) for key, test in cast(dict[str, Any], a_data["tests"]).items()}
         self.criteria = a_data["criteria"]
     
+    def addTests(self, a_testData: dict[str, Any]) -> None:
+        self.tests.update({key: CodeTest.fromDict(test) for key, test in a_testData.items()})
+    
     def toDict(self) -> dict[str, Any]:
         """Convert to a dict.
         """

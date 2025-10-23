@@ -2,11 +2,11 @@ from __future__ import annotations
 
 # fmt: off
 
-from autograder.code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, ASTPatternTestNode
-from autograder.code_test_type import IParameterGroup, ParameterRepresentation
+from src.autograder.code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, ASTPatternTestNode
+from src.autograder.code_test_type import IParameterGroup, ParameterRepresentation
 from subprocess import Popen, PIPE
 from typing import TYPE_CHECKING, cast
-from autograder.code_walker import ASTWalker
+from src.autograder.code_walker import ASTWalker
 import re
 import difflib
 
@@ -84,26 +84,8 @@ def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: Autograder) -> tu
 def compareOutputParameters() -> list[IParameterGroup]:
     return [
         cast(IParameterGroup, ParameterRepresentation("type", "string", {})),
-        cast(IParameterGroup, ParameterRepresentation("base_project", "ProjectTestNode", {
-            "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
-            "project_name": cast(IParameterGroup, ParameterRepresentation("project_name", "string", {})),
-            "project_entrypoint": cast(IParameterGroup, ParameterRepresentation("project_entrypoint", "string", {})),
-            "project_arguments": cast(IParameterGroup, ParameterRepresentation("project_arguments", "DictTestNode", {
-                "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
-                "nodes": cast(IParameterGroup, ParameterRepresentation("nodes", "dict[str, CodeTestNode]", {})),
-            })),
-            "project_inputs": cast(IParameterGroup, ParameterRepresentation("project_inputs", "list[string]", {})),
-        })),
-        cast(IParameterGroup, ParameterRepresentation("test_project", "ProjectTestNode", {
-            "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
-            "project_name": cast(IParameterGroup, ParameterRepresentation("project_name", "string", {})),
-            "project_entrypoint": cast(IParameterGroup, ParameterRepresentation("project_entrypoint", "string", {})),
-            "project_arguments": cast(IParameterGroup, ParameterRepresentation("project_arguments", "DictTestNode", {
-                "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
-                "nodes": cast(IParameterGroup, ParameterRepresentation("nodes", "dict[str, CodeTestNode]", {})),
-            })),
-            "project_inputs": cast(IParameterGroup, ParameterRepresentation("project_inputs", "list[string]", {})),
-        })),
+        ProjectTestNode.parameterRepresentation("base_project"),
+        ProjectTestNode.parameterRepresentation("test_project"),
         cast(IParameterGroup, ParameterRepresentation("stdout", "string", {})),
         cast(IParameterGroup, ParameterRepresentation("stderr", "string", {})),
         cast(IParameterGroup, ParameterRepresentation("return_code", "string", {}))
@@ -136,8 +118,11 @@ def assertOutput(a_arguments: dict[str, CodeTestNode], a_app: Autograder) -> tup
 
 def assertOutputParameters() -> list[IParameterGroup]:
     return [
-        cast(IParameterGroup, ParameterRepresentation("", "string", {})),
-        cast(IParameterGroup, ParameterRepresentation("", "string", {}))
+        cast(IParameterGroup, ParameterRepresentation("type", "string", {})),
+        ProjectTestNode.parameterRepresentation("test_project"),
+        cast(IParameterGroup, ParameterRepresentation("stdout", "string", {})),
+        cast(IParameterGroup, ParameterRepresentation("stderr", "string", {})),
+        cast(IParameterGroup, ParameterRepresentation("return_code", "string", {}))
     ]
 
 VALID_FILE_MATCHES: set[str] = {"Match", "Diff", "No Match"}
@@ -168,6 +153,12 @@ def compareFiles(a_arguments: dict[str, CodeTestNode], a_app: Autograder) -> tup
 
 def compareFilesParameters() -> list[IParameterGroup]:
     return [
+        cast(IParameterGroup, ParameterRepresentation("type", "string", {})),
+        ProjectTestNode.parameterRepresentation("base_project"),
+        ProjectTestNode.parameterRepresentation("test_project"),
+        cast(IParameterGroup, ParameterRepresentation("base_file", "string", {})),
+        cast(IParameterGroup, ParameterRepresentation("test_file", "string", {})),
+        cast(IParameterGroup, ParameterRepresentation("match", "string", {}))
     ]
 
 def assertFile(a_arguments: dict[str, CodeTestNode], a_app: Autograder) -> tuple[float, bool]:
@@ -186,8 +177,10 @@ def assertFile(a_arguments: dict[str, CodeTestNode], a_app: Autograder) -> tuple
 
 def assertFileParameters() -> list[IParameterGroup]:
     return [
-        cast(IParameterGroup, ParameterRepresentation("", "string", {})),
-        cast(IParameterGroup, ParameterRepresentation("", "string", {}))
+        cast(IParameterGroup, ParameterRepresentation("type", "string", {})),
+        ProjectTestNode.parameterRepresentation("test_project"),
+        cast(IParameterGroup, ParameterRepresentation("test_file", "string", {})),
+        cast(IParameterGroup, ParameterRepresentation("match", "string", {}))
     ]
 
 #def walkAST(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> tuple[float, bool]:
