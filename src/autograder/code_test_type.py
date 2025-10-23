@@ -1,5 +1,10 @@
+from __future__ import annotations
+
+# fmt: off
+
 from dataclasses import dataclass
 from typing import Callable, TYPE_CHECKING
+from abc import ABC, abstractmethod
 if TYPE_CHECKING:
     from code_test import CodeTestNode
     from autograder.autograder_application import Autograder
@@ -24,5 +29,12 @@ class ExclusiveParameters(IParameterGroup):
 @dataclass
 class CodeTestType:
     name: str
-    testFunction: Callable[[dict[str, "CodeTestNode"], "Autograder"], tuple[float, bool]]
+    testFunction: Callable[[dict[str, CodeTestNode], Autograder], tuple[float, bool]]
     parameters: Callable[[], list[IParameterGroup]]
+
+class IParameterRepresentable(ABC):
+    @staticmethod
+    @abstractmethod
+    def parameterRepresentation(a_id: str) -> IParameterGroup:
+        ...
+

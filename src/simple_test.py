@@ -141,18 +141,18 @@ def main():
                     },
                     "stdout": {
                         "node_id": "literal",
-                        "literalType": "string",
-                        "literalValue": "Match"
+                        "literal_type": "string",
+                        "literal_value": "Diff"
                     },
                     "stderr": {
                         "node_id": "literal",
-                        "literalType": "string",
-                        "literalValue": "Match"
+                        "literal_type": "string",
+                        "literal_value": "Diff"
                     },
                     "return_code": {
                         "node_id": "literal",
-                        "literalType": "string",
-                        "literalValue": "Match"
+                        "literal_type": "string",
+                        "literal_value": "Ignore"
                     }
                 },  #key: node.ToDict() for key, node in self.arguments.items()
                 "found": {
@@ -175,7 +175,10 @@ def main():
                             "node_id": "post_grade_modifier",
                             "criterion": "output",
                             "modifier_type": "addition",
-                            "modifier_value": 0,
+                            "modifier_value": {
+                                "node_id": "ast_node",
+                                "to_call": "a_data[\"factor\"]"
+                            },
                             "max_value": 1,
                             "passes": False
                         }
@@ -393,18 +396,18 @@ def main():
                     },
                     "stdout": {
                         "node_id": "literal",
-                        "literalType": "string",
-                        "literalValue": "Match"
+                        "literal_type": "string",
+                        "literal_value": "Diff"
                     },
                     "stderr": {
                         "node_id": "literal",
-                        "literalType": "string",
-                        "literalValue": "Match"
+                        "literal_type": "string",
+                        "literal_value": "Diff"
                     },
                     "return_code": {
                         "node_id": "literal",
-                        "literalType": "string",
-                        "literalValue": "Match"
+                        "literal_type": "string",
+                        "literal_value": "Match"
                     }
                 },  #key: node.ToDict() for key, node in self.arguments.items()
                 "found": {
@@ -427,7 +430,10 @@ def main():
                             "node_id": "post_grade_modifier",
                             "criterion": "output",
                             "modifier_type": "addition",
-                            "modifier_value": 0,
+                            "modifier_value": {
+                                "node_id": "ast_node",
+                                "to_call": "a_data[\"factor\"]"
+                            },
                             "max_value": 1,
                             "passes": False
                         }

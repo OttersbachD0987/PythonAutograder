@@ -1,9 +1,12 @@
+# fmt: off
+
 import ast
 import re
 from ast import NodeVisitor, While, Constant, Compare, expr, Call, UnaryOp, Not, Gt, GtE, Lt, LtE, Eq, NotEq, FunctionDef, ImportFrom, Name, Load, Set, Del, AST, Add, alias, And, AnnAssign, arg, arguments, Assert, Assign, AsyncFor, AsyncFunctionDef, AsyncWith, Attribute, AugAssign, Await, BinOp, BitAnd, BitOr, BitXor, BoolOp, boolop, Break, ClassDef, cmpop, comprehension, Continue, Delete, Dict, DictComp, Div, ExceptHandler, excepthandler, Expr, expr_context, Expression, FloorDiv, For, FormattedValue, FunctionType, GeneratorExp, Global, If, IfExp, Import, In, Interactive, Invert, Is, IsNot, JoinedStr, keyword, Lambda, List, ListComp, LShift, Match, match_case, MatchAs, MatchClass, MatchMapping, MatchOr, MatchSequence, MatchSingleton, MatchStar, MatchValue, MatMult, Mod, mod, Module, Mult, NamedExpr, NodeTransformer, Nonlocal, NotIn, operator, Or, ParamSpec, Pass, pattern, Pow, Raise, Return, RShift, SetComp, Slice, Starred, stmt, Store, Sub, Subscript, Try, TryStar, Tuple, type_ignore, type_param, TypeAlias, TypeIgnore, TypeVar, TypeVarTuple, UAdd, unaryop, USub, With, withitem, Yield, YieldFrom, iter_fields
-from typing import Any, cast, TYPE_CHECKING, Self, Optional
+from typing import Any, cast, TYPE_CHECKING, Optional, override
 from enum import StrEnum, auto
 from dataclasses import dataclass
+from .code_test_type import IParameterGroup, IParameterRepresentable, ParameterRepresentation
 
 if TYPE_CHECKING:
     from project_settings import ProjectSettings
@@ -150,12 +153,12 @@ def isTrue(a_node: expr, a_default: bool = False) -> bool:
         print(e)
     return a_default
 
-class ASTPattern:
-    def __init__(self, a_nodeType: str|ASTNodeType, a_comparisonData: dict[str, Any]|None = None) -> None:
+class ASTPattern(IParameterRepresentable):
+    def __init__(self, a_nodeType: str|ASTNodeType, a_comparisonData: Optional[dict[str, Any]] = None) -> None:
         """
         Args:
             a_nodeType (str|ASTNodeType): The node type of the ASTPattern, either in string form, or a ASTNodeType enum.
-            a_comparisonData (dict[str, Any]|None): The comparison data for the ASTPattern to use, if none then an empty dictionary.
+            a_comparisonData (Optional[dict[str, Any]]): The comparison data for the ASTPattern to use, if none then an empty dictionary.
         """
         self.nodeType: ASTNodeType = ASTNodeType(a_nodeType) if isinstance(a_nodeType, str) else a_nodeType
         self.comparisonData: dict[str, Any] = {} if a_comparisonData is None else a_comparisonData
@@ -241,6 +244,14 @@ class ASTPattern:
         return {
             "a": 1
         }
+
+    @override
+    @staticmethod
+    def parameterRepresentation(a_id: str) -> IParameterGroup:
+        return cast(IParameterGroup, ParameterRepresentation(a_id, "ASTPattern", {
+            "node_type": cast(IParameterGroup, ParameterRepresentation("node_type", "string", {})),
+            "comparison_data": cast(IParameterGroup, ParameterRepresentation("comparison_data", "dict[str, Any]", {}))
+        }))
 
 class ASTWalker(NodeVisitor):
     def __init__(self, a_pattern: ASTPattern):
@@ -731,7 +742,7 @@ def isExpressionTrue(a_node: expr) -> bool:
     elif isinstance(a_node, Compare):
         left = parseExpression(a_node)
         right = parseExpression(a_node.comparators[0])
-        if left == None or right == None:
+        if left is None or right is None:
             return False
         if isinstance(a_node.ops[0], Gt):
             return left > right
@@ -749,3 +760,4 @@ def isExpressionTrue(a_node: expr) -> bool:
         if isinstance(a_node.op, Not):
             return not isExpressionTrue(a_node.operand)
     return False
+

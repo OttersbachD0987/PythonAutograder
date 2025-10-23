@@ -5,19 +5,19 @@ from .autograder_modifier import AutograderModifier, ModifierType
 from typing import NamedTuple
 
 class FinalModifier(NamedTuple):
-    addition:       int
-    multiplication: int
-    override:       int
+    addition:       float
+    multiplication: float
+    override:       float
     overridden:     bool
-    maxValue:       int
+    maxValue:       float
     passes:         bool
 
 DEFAULT_MODIFIER: FinalModifier = FinalModifier(0, 1, 0, False, 0, True)
 
 class RubricGrade(NamedTuple):
     message:   str
-    amount:    int
-    maxAmount: int
+    amount:    float
+    maxAmount: float
     passes:    bool
 
 @dataclass
@@ -36,22 +36,22 @@ class AutograderReport:
         for modifier in self.modifiers:
             match modifier.modifierType:
                 case ModifierType.ADDITION:
-                    self.final[modifier.criterion] = FinalModifier(int(self.final.get(modifier.criterion, DEFAULT_MODIFIER).addition + modifier.modifierValue), self.final.get(modifier.criterion, DEFAULT_MODIFIER).multiplication, self.final.get(modifier.criterion, DEFAULT_MODIFIER).override, self.final.get(modifier.criterion, DEFAULT_MODIFIER).overridden, int(modifier.maxValue), self.final.get(modifier.criterion, DEFAULT_MODIFIER).passes and modifier.passes)
+                    self.final[modifier.criterion] = FinalModifier(self.final.get(modifier.criterion, DEFAULT_MODIFIER).addition + modifier.modifierValue, self.final.get(modifier.criterion, DEFAULT_MODIFIER).multiplication, self.final.get(modifier.criterion, DEFAULT_MODIFIER).override, self.final.get(modifier.criterion, DEFAULT_MODIFIER).overridden, modifier.maxValue, self.final.get(modifier.criterion, DEFAULT_MODIFIER).passes and modifier.passes)
                 case ModifierType.MULTIPLY:
-                    self.final[modifier.criterion] = FinalModifier(self.final.get(modifier.criterion, DEFAULT_MODIFIER).addition, int(self.final.get(modifier.criterion, DEFAULT_MODIFIER).multiplication * modifier.modifierValue), self.final.get(modifier.criterion, DEFAULT_MODIFIER).override, self.final.get(modifier.criterion, DEFAULT_MODIFIER).overridden, int(modifier.maxValue), self.final.get(modifier.criterion, DEFAULT_MODIFIER).passes and modifier.passes)
+                    self.final[modifier.criterion] = FinalModifier(self.final.get(modifier.criterion, DEFAULT_MODIFIER).addition, self.final.get(modifier.criterion, DEFAULT_MODIFIER).multiplication * modifier.modifierValue, self.final.get(modifier.criterion, DEFAULT_MODIFIER).override, self.final.get(modifier.criterion, DEFAULT_MODIFIER).overridden, modifier.maxValue, self.final.get(modifier.criterion, DEFAULT_MODIFIER).passes and modifier.passes)
                 case ModifierType.OVERRIDE:
-                    self.final[modifier.criterion] = FinalModifier(self.final.get(modifier.criterion, DEFAULT_MODIFIER).addition, self.final.get(modifier.criterion, DEFAULT_MODIFIER)[1], int(modifier.modifierValue), True, int(modifier.maxValue), self.final.get(modifier.criterion, DEFAULT_MODIFIER)[5] and modifier.passes)
+                    self.final[modifier.criterion] = FinalModifier(self.final.get(modifier.criterion, DEFAULT_MODIFIER).addition, self.final.get(modifier.criterion, DEFAULT_MODIFIER)[1], modifier.modifierValue, True, modifier.maxValue, self.final.get(modifier.criterion, DEFAULT_MODIFIER)[5] and modifier.passes)
                 case ModifierType.OVERKILL:
                     self.final.clear()
-                    self.final[modifier.criterion] = FinalModifier(DEFAULT_MODIFIER.addition, DEFAULT_MODIFIER.multiplication, int(modifier.modifierValue), True, int(modifier.maxValue), modifier.passes)
+                    self.final[modifier.criterion] = FinalModifier(DEFAULT_MODIFIER.addition, DEFAULT_MODIFIER.multiplication, modifier.modifierValue, True, modifier.maxValue, modifier.passes)
                     for otherModifier in (set(self.modifiers) - {modifier}):
-                        self.final[otherModifier.criterion] = FinalModifier(self.final.get(modifier.criterion, DEFAULT_MODIFIER)[0], self.final.get(modifier.criterion, DEFAULT_MODIFIER)[1], self.final.get(modifier.criterion, DEFAULT_MODIFIER)[2], self.final.get(modifier.criterion, DEFAULT_MODIFIER)[3], int(modifier.maxValue), self.final.get(modifier.criterion, DEFAULT_MODIFIER)[5] and modifier.passes)
+                        self.final[otherModifier.criterion] = FinalModifier(self.final.get(modifier.criterion, DEFAULT_MODIFIER)[0], self.final.get(modifier.criterion, DEFAULT_MODIFIER)[1], self.final.get(modifier.criterion, DEFAULT_MODIFIER)[2], self.final.get(modifier.criterion, DEFAULT_MODIFIER)[3], modifier.maxValue, self.final.get(modifier.criterion, DEFAULT_MODIFIER)[5] and modifier.passes)
                     return (modifier.criterion, modifier.modifierValue, ", ".join([message for _, message in self.messages.get(modifier.criterion, [])]))
         return None
 
     def usable(self, a_criteria: dict[str, float]) -> dict[str, RubricGrade]:
         return {
-            criterion: RubricGrade(", ".join([message for _, message in self.messages.get(criterion, [])]), int(override * a_criteria.get(criterion, 1) if overriden else base * mult * a_criteria.get(criterion, 1)), int(maxValue * a_criteria.get(criterion, 1)), passes) for criterion, (base, mult, override, overriden, maxValue, passes) in self.final.items()
+            criterion: RubricGrade(", ".join([message for _, message in self.messages.get(criterion, [])]), round(override * a_criteria.get(criterion, 1) if overriden else base * mult * a_criteria.get(criterion, 1)), round(maxValue * a_criteria.get(criterion, 1)), passes) for criterion, (base, mult, override, overriden, maxValue, passes) in self.final.items()
         }        
     
     def clear(self) -> None:

@@ -24,7 +24,7 @@ class ExtensionManager:
         for extension_id, (extension, _) in self.extensions.items():
             #with open(f"{extension.path}/main.py") as extensionFile:
             #    exec(extensionFile.read())
-            print([dir.path for dir in os.scandir(f"{extension.path}") if dir.is_dir()])
+            #print([dir.path for dir in os.scandir(f"{extension.path}") if dir.is_dir()])
             spec = importlib.util.spec_from_file_location(extension_id, f"{extension.path}/main.py") # , submodule_search_locations=[dir.path for dir in os.scandir(f"{extension.path}") if dir.is_dir()]
             module = importlib.util.module_from_spec(spec)
             sys.modules[extension_id] = module

@@ -1,8 +1,12 @@
-from src.autograder.code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, ASTPatternTestNode
-from src.autograder.code_test_type import IParameterGroup, ParameterRepresentation, OptionalParameter, ExclusiveParameters
+from __future__ import annotations
+
+# fmt: off
+
+from autograder.code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, ASTPatternTestNode
+from autograder.code_test_type import IParameterGroup, ParameterRepresentation
 from subprocess import Popen, PIPE
 from typing import TYPE_CHECKING, cast
-from src.autograder.code_walker import ASTWalker
+from autograder.code_walker import ASTWalker
 import re
 import difflib
 from difflib import Match
@@ -11,11 +15,13 @@ if TYPE_CHECKING:
     from src.autograder.autograder_application import Autograder
     from src.project.python_file import PythonFile
 
-def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> tuple[float, bool]:
+VALID_COMPARE_MATCHES: set[str] = {"Match", "Diff", "No Match", "Ignore"}
+
+def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: Autograder) -> tuple[float, bool]:
     """
     """
-    grade: int = 0
-    VALID_OUTPUTS: set[str] = {"Match", "No Match", "Ignore"}
+    grade: float = 0
+    
     if isinstance(baseProject := a_arguments["base_project"], ProjectTestNode) and isinstance(testProject := a_arguments["test_project"], ProjectTestNode):
         subBase: Popen[str] = Popen(" ".join([
                 "py", f"{(projectDir := a_app.instanceData.projects[baseProject.projectName].dir)}\\{baseProject.projectEntrypoint}", 
@@ -38,24 +44,29 @@ def compareOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> 
             text=True)
 
         stdoutTest, stderrTest = subTest.communicate("\n".join(testProject.projectInputs), timeout=10.0)
+        #print(f"{a_arguments["stdout"]} : {isinstance(node := a_arguments["stdout"], LiteralTestNode)} : {node.literalType} : {(value := node.literalValue)} : {value in VALID_COMPARE_MATCHES}")
 
-        match (value if (isinstance(node := a_arguments["stdout"], LiteralTestNode) and node.literalType == "string" and ((value := node.literalValue) in VALID_OUTPUTS)) else "Match"):
+        match (value if (isinstance(node := a_arguments["stdout"], LiteralTestNode) and node.literalType == "string" and ((value := node.literalValue) in VALID_COMPARE_MATCHES)) else "Match"):
             case "Ignore":
                 grade += 1
             case "Match"    if stdoutBase == stdoutTest:
                 grade += 1
+            case "Diff":
+                grade += difflib.SequenceMatcher(None, stdoutBase, stdoutTest).ratio()
             case "No Match" if stdoutBase != stdoutTest:
                 grade += 1
 
-        match (value if (isinstance(node := a_arguments["stderr"], LiteralTestNode) and node.literalType == "string" and ((value := node.literalValue) in VALID_OUTPUTS)) else "Match"):
+        match (value if (isinstance(node := a_arguments["stderr"], LiteralTestNode) and node.literalType == "string" and ((value := node.literalValue) in VALID_COMPARE_MATCHES)) else "Match"):
             case "Ignore":
                 grade += 1
             case "Match"    if stderrBase == stderrTest:
                 grade += 1
+            case "Diff":
+                grade += difflib.SequenceMatcher(None, stderrBase, stderrTest).ratio()
             case "No Match" if stderrBase != stderrTest:
                 grade += 1
 
-        match (value if (isinstance(node := a_arguments["return_code"], LiteralTestNode) and node.literalType == "string" and ((value := node.literalValue) in VALID_OUTPUTS)) else "Match"):
+        match (value if (isinstance(node := a_arguments["return_code"], LiteralTestNode) and node.literalType == "string" and ((value := node.literalValue) in VALID_COMPARE_MATCHES)) else "Match"):
             case "Ignore":
                 grade += 1
             case "Match"    if subBase.returncode == subTest.returncode:
@@ -93,7 +104,7 @@ def compareOutputParameters() -> list[IParameterGroup]:
         cast(IParameterGroup, ParameterRepresentation("return_code", "string", {}))
     ]
 
-def assertOutput(a_arguments: dict[str, CodeTestNode], a_app: "Autograder") -> tuple[float, bool]:
+def assertOutput(a_arguments: dict[str, CodeTestNode], a_app: Autograder) -> tuple[float, bool]:
     """
     """
     grade: int = 0
@@ -215,3 +226,4 @@ CodeTest.registerTestType(
 # Type
 # Test
 #endregion
+

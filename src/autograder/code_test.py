@@ -1,21 +1,25 @@
+from __future__ import annotations
+
+# fmt: off
+
 from dataclasses import dataclass
 from typing import ClassVar, Callable, Any, Self, TYPE_CHECKING, cast, override, Optional
 from abc import ABC, abstractmethod
 from .code_walker import ASTPattern
 from .autograder_modifier import AutograderModifier, ModifierType
-from .code_test_type import CodeTestType, IParameterGroup
+from .code_test_type import CodeTestType, IParameterGroup, IParameterRepresentable, ParameterRepresentation
 if TYPE_CHECKING:
     from .autograder_application import Autograder
 
 @dataclass
-class CodeTestNode(ABC):
-    nodeID: str
-
+class IDictSerializable(ABC):
     @abstractmethod
     def toDict(self) -> dict[str, Any]:
-        """Convert to a dict.
-        """
-        pass
+        ...
+
+@dataclass
+class CodeTestNode(IDictSerializable, ABC):
+    nodeID: str
 
 class IExecutable(CodeTestNode, ABC):
     @abstractmethod
@@ -48,7 +52,7 @@ class ICanReturnFloat(ICanReturnAny, ABC):
         pass
 
 @dataclass
-class ListTestNode(CodeTestNode):
+class ListTestNode(CodeTestNode, IParameterRepresentable):
     nodes: list[CodeTestNode]
 
     @override
@@ -60,8 +64,16 @@ class ListTestNode(CodeTestNode):
             "nodes": [node.toDict() for node in self.nodes]
         }
 
+    @override
+    @staticmethod
+    def parameterRepresentation(a_id: str) -> IParameterGroup:
+        return cast(IParameterGroup, ParameterRepresentation(a_id, "ListTestNode", {
+            "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
+            "nodes": cast(IParameterGroup, ParameterRepresentation("nodes", "list[CodeTestNode]", {}))
+        }))
+
 @dataclass
-class DictionaryTestNode(CodeTestNode):
+class DictionaryTestNode(CodeTestNode, IParameterRepresentable):
     nodes: dict[str, CodeTestNode]
 
     @override
@@ -73,8 +85,16 @@ class DictionaryTestNode(CodeTestNode):
             "nodes": {key: node.toDict() for key, node in self.nodes.items()}
         }
 
+    @override
+    @staticmethod
+    def parameterRepresentation(a_id: str) -> IParameterGroup:
+        return cast(IParameterGroup, ParameterRepresentation(a_id, "DictionaryTestNode", {
+            "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
+            "nodes": cast(IParameterGroup, ParameterRepresentation("nodes", "dict[str, CodeTestNode]", {}))
+        }))
+
 @dataclass
-class LiteralTestNode(ICanReturnBool, ICanReturnStr, ICanReturnInt, ICanReturnFloat):
+class LiteralTestNode(ICanReturnBool, ICanReturnStr, ICanReturnInt, ICanReturnFloat, IParameterRepresentable):
     literalType: str
     literalValue: Any
     
@@ -108,13 +128,25 @@ class LiteralTestNode(ICanReturnBool, ICanReturnStr, ICanReturnInt, ICanReturnFl
     def evaluateAny(self, a_data: dict[str, Any]) -> Any:
         return self.literalType
 
+    @override
+    @staticmethod
+    def parameterRepresentation(a_id: str) -> IParameterGroup:
+        return cast(IParameterGroup, ParameterRepresentation(a_id, "LiteralTestNode", {
+            "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
+            "literal_type": cast(IParameterGroup, ParameterRepresentation("literal_type", "string", {})),
+            "literal_value": cast(IParameterGroup, ParameterRepresentation("literal_value", "Any", {}))
+        }))
+
 @dataclass
-class ASTNodeTestNode(ICanReturnBool, ICanReturnStr, ICanReturnInt, ICanReturnFloat):
+class ASTNodeTestNode(ICanReturnBool, ICanReturnStr, ICanReturnInt, ICanReturnFloat, IParameterRepresentable):
     toCall: str
     
     @override
     def toDict(self) -> dict[str, str]:
-        """Convert to a dict.
+        """Convert to a dictionary representation.
+
+        Returns:
+            out (dict[str, str]): The dictionary representation of the node.
         """
         return {
             "node_id": self.nodeID,
@@ -141,8 +173,16 @@ class ASTNodeTestNode(ICanReturnBool, ICanReturnStr, ICanReturnInt, ICanReturnFl
     def evaluateAny(self, a_data: dict[str, Any]) -> Any:
         return eval(self.toCall)
 
+    @override
+    @staticmethod
+    def parameterRepresentation(a_id: str) -> IParameterGroup:
+        return cast(IParameterGroup, ParameterRepresentation(a_id, "ASTNodeTestNode", {
+            "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
+            "to_call": cast(IParameterGroup, ParameterRepresentation("to_call", "string", {}))
+        }))
+
 @dataclass
-class ProjectTestNode(CodeTestNode):
+class ProjectTestNode(CodeTestNode, IParameterRepresentable):
     projectName: str
     projectEntrypoint: str
     projectArguments: DictionaryTestNode
@@ -159,6 +199,17 @@ class ProjectTestNode(CodeTestNode):
             "project_arguments": self.projectArguments.toDict(),
             "project_inputs": self.projectInputs
         }
+
+    @override
+    @staticmethod
+    def parameterRepresentation(a_id: str) -> IParameterGroup:
+        return cast(IParameterGroup, ParameterRepresentation(a_id, "ProjectTestNode", {
+            "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
+            "project_name": cast(IParameterGroup, ParameterRepresentation("project_name", "string", {})),
+            "project_entrypoint": cast(IParameterGroup, ParameterRepresentation("project_entrypoint", "string", {})),
+            "project_arguments": DictionaryTestNode.parameterRepresentation("project_arguments"),
+            "project_inputs": cast(IParameterGroup, ParameterRepresentation("project_inputs", "list[string]", {}))
+        }))
 
 @dataclass
 class InvalidTestNode(CodeTestNode):
@@ -177,7 +228,7 @@ class InvalidTestNode(CodeTestNode):
         }
     
 @dataclass
-class ComparisonTestNode(ICanReturnBool):
+class ComparisonTestNode(ICanReturnBool, IParameterRepresentable):
     left: ICanReturnAny
     operator: str
     right: ICanReturnAny
@@ -225,9 +276,19 @@ class ComparisonTestNode(ICanReturnBool):
     def evaluateAny(self, a_data: dict[str, Any]) -> Any:
         return self.evaluateBool(a_data)
 
+    @override
+    @staticmethod
+    def parameterRepresentation(a_id: str) -> IParameterGroup:
+        return cast(IParameterGroup, ParameterRepresentation(a_id, "ComparisonTestNode", {
+            "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
+            "left": cast(IParameterGroup, ParameterRepresentation("left", "ICanReturnAny", {})),
+            "operator": cast(IParameterGroup, ParameterRepresentation("operator", "string", {})),
+            "right": cast(IParameterGroup, ParameterRepresentation("right", "ICanReturnAny", {}))
+        }))
+
 #region AST Related Nodes
 @dataclass
-class ASTPatternTestNode(CodeTestNode):
+class ASTPatternTestNode(CodeTestNode, IParameterRepresentable):
     nodeType: str
     pattern: ASTPattern
 
@@ -240,6 +301,16 @@ class ASTPatternTestNode(CodeTestNode):
             "node_type": self.nodeType,
             "pattern": self.pattern.toDict()
         }
+
+    @override
+    @staticmethod
+    def parameterRepresentation(a_id: str) -> IParameterGroup:
+        return cast(IParameterGroup, ParameterRepresentation(a_id, "ASTPatternTestNode", {
+            "node_id": cast(IParameterGroup, ParameterRepresentation("node_id", "string", {})),
+            "node_type": cast(IParameterGroup, ParameterRepresentation("node_type", "string", {})),
+            "pattern": ASTPattern.parameterRepresentation("pattern")
+
+        }))
 
 @dataclass
 class ASTWalkTestNode(CodeTestNode):
@@ -277,13 +348,22 @@ class PostMessageTestNode(IExecutable):
     def execute(self, a_data: dict[str, Any]) -> None:
         eval(f"cast(\"Autograder\", a_data[\"autograder\"]).instanceData.report.postLog(\"{self.criterion}\", f\"{self.nodeMessage}\")")
 
+def CanReturnWrapper(a_value: Any|IDictSerializable) -> dict[str, Any]|Any:
+    return a_value.toDict() if isinstance(a_value, IDictSerializable) else a_value
+
+def EvaluateFloat(a_value: float|ICanReturnFloat, a_data: dict[str, Any]) -> float:
+    return a_value.evaluateFloat(a_data) if isinstance(a_value, ICanReturnFloat) else cast(float, a_value)
+
+def EvaluateBool(a_value: bool|ICanReturnBool, a_data: dict[str, Any]) -> bool:
+    return a_value.evaluateBool(a_data) if isinstance(a_value, ICanReturnBool) else cast(bool, a_value)
+
 @dataclass
 class PostGradeModifierTestNode(IExecutable):
     criterion: str
     modifierType: ModifierType
-    modifierValue: float
-    maxValue: float
-    passes: bool
+    modifierValue: float|ICanReturnFloat
+    maxValue: float|ICanReturnFloat
+    passes: bool|ICanReturnBool
 
     @override
     def toDict(self) -> dict[str, Any]:
@@ -293,14 +373,14 @@ class PostGradeModifierTestNode(IExecutable):
             "node_id": self.nodeID,
             "criterion": self.criterion,
             "modifier_type": str(self.modifierType),
-            "modifier_value": self.modifierValue,
-            "max_value": self.maxValue,
-            "passes": self.passes
+            "modifier_value": CanReturnWrapper(self.modifierValue),
+            "max_value": CanReturnWrapper(self.maxValue),
+            "passes": CanReturnWrapper(self.passes)
         }
 
     @override
     def execute(self, a_data: dict[str, Any]) -> None:
-        cast("Autograder", a_data["autograder"]).instanceData.report.addModifier(AutograderModifier(self.criterion, self.modifierType, self.modifierValue, self.maxValue, self.passes))
+        cast("Autograder", a_data["autograder"]).instanceData.report.addModifier(AutograderModifier(self.criterion, self.modifierType, EvaluateFloat(self.modifierValue, a_data), EvaluateFloat(self.maxValue, a_data), EvaluateBool(self.passes, a_data)))
 
 @dataclass
 class BlockTestNode(IExecutable):
@@ -350,11 +430,11 @@ class CodeTest:
         CodeTest.TestTypes[a_id] = CodeTestType(a_id, a_testFunction, a_parameters)
     
     def runTest(self, a_grader: "Autograder", a_data: dict[str, Any]) -> tuple[float, bool]:
-        a_data["factor"], a_data["success"]= CodeTest.TestTypes[self.type].testFunction(self.arguments, a_grader)
+        a_data["factor"], a_data["success"] = CodeTest.TestTypes[self.type].testFunction(self.arguments, a_grader)
         if a_data["success"]:
-            if self.found:
+            if self.found is not None:
                 executeCodeTestNode(cast(IExecutable, self.found), a_data)
-        elif self.notFound:
+        elif self.notFound is not None:
             executeCodeTestNode(cast(IExecutable, self.notFound), a_data)
         return a_data.pop("factor"), a_data.pop("success")
 
@@ -382,8 +462,12 @@ def parseCodeTestNode(a_node: dict[str, Any]) -> CodeTestNode:
             return ProjectTestNode(nodeID, projectName, projectEntrypoint, parsed, projectInputs)
         case {"node_id": nodeID, "node_type": nodeType, "pattern": pattern} if nodeID == "ast_pattern":
             return ASTPatternTestNode(nodeID, nodeType, ASTPattern.fromDict(pattern))
-        case {"node_id": nodeID, "criterion": criterion, "modifier_type": modifierType, "modifier_value": modifierValue, "max_value": maxValue, "passes": passes} if nodeID == "post_grade_modifier":
-            return PostGradeModifierTestNode(nodeID, criterion, ModifierType(modifierType), modifierValue, maxValue, passes)
+        case {"node_id": nodeID, "criterion": criterion, "modifier_type": modifierType, "modifier_value": modifierValue, "max_value": maxValue, "passes": passes} if (nodeID == "post_grade_modifier"
+                and (isinstance(modifierValueUse := modifierValue, float|int) or isinstance(modifierValueUse := parseCodeTestNode(modifierValue), ICanReturnFloat))
+                and (isinstance(maxValueUse := maxValue, float|int) or isinstance(maxValueUse := parseCodeTestNode(maxValue), ICanReturnFloat))
+                and (isinstance(passesUse := passes, bool) or isinstance(passesUse := parseCodeTestNode(passes), ICanReturnBool))):
+            return PostGradeModifierTestNode(nodeID, criterion, ModifierType(modifierType), modifierValueUse, maxValueUse, passesUse)
+    #print(f"Invalid: {a_node}")
     return InvalidTestNode("invalid", a_node)
 
 def evaluateCodeTestNode(a_node: ICanReturnAny, a_data: dict[str, Any]) -> Any:
@@ -391,3 +475,4 @@ def evaluateCodeTestNode(a_node: ICanReturnAny, a_data: dict[str, Any]) -> Any:
         
 def executeCodeTestNode(a_node: IExecutable, a_data: dict[str, Any]) -> None:
     a_node.execute(a_data)
+

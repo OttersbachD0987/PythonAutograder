@@ -1,0 +1,13 @@
+[toml.ruff]
+exclude = [".git", "Docs", "Tests", "venv"]
+
+line-length = 120
+indent-width = 4
+
+[toml.ruff.lint]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
