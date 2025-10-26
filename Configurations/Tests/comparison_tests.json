@@ -1,0 +1,116 @@
+{
+  "program2_variables": {
+    "type": "walk_ast",
+    "arguments": {
+      "test_project": {
+        "node_id": "project",
+        "project_name": "TEST_PROJECT",
+        "project_entrypoint": "main.py",
+        "project_arguments": {
+          "node_id": "dictionary",
+          "nodes": {}
+        },
+        "project_inputs": []
+      },
+      "pattern": {
+        "node_id": "ast_pattern",
+        "node_type": "assign",
+        "pattern": {
+          "node_id": "ast_pattern",
+          "node_type": "assign",
+          "match_kind": "target_pattern",
+          "target_pattern": {
+            "node_id": "ast_pattern",
+            "node_type": "name",
+            "name": "[a-zA-Z_]\\w+"
+          }
+        }
+      }
+    },
+    "found": {
+      "node_id": "block",
+      "nodes": [
+        {
+          "node_id": "post_grade_modifier",
+          "criterion": "variables",
+          "modifier_type": "addition",
+          "modifier_value": 1,
+          "max_value": 1,
+          "passes": true
+        }
+      ]
+    },
+    "notFound": {
+      "node_id": "block",
+      "nodes": [
+        {
+          "node_id": "post_message",
+          "criterion": "variables",
+          "node_message": "Variables named incorrectly."
+        },
+        {
+          "node_id": "post_grade_modifier",
+          "criterion": "variables",
+          "modifier_type": "addition",
+          "modifier_value": 0,
+          "max_value": 1,
+          "passes": false
+        }
+      ]
+    }
+  },
+  "program2_functions": {
+    "type": "walk_ast",
+    "arguments": {
+      "test_project": {
+        "node_id": "project",
+        "project_name": "TEST_PROJECT",
+        "project_entrypoint": "main.py",
+        "project_arguments": {
+          "node_id": "dictionary",
+          "nodes": {}
+        },
+        "project_inputs": []
+      },
+      "pattern": {
+        "node_id": "ast_pattern",
+        "node_type": "function_def",
+        "pattern": {
+          "node_id": "ast_pattern",
+          "node_type": "function_def"
+        }
+      }
+    },
+    "found": {
+      "node_id": "block",
+      "nodes": [
+        {
+          "node_id": "post_grade_modifier",
+          "criterion": "functions",
+          "modifier_type": "addition",
+          "modifier_value": 1,
+          "max_value": 1,
+          "passes": true
+        }
+      ]
+    },
+    "notFound": {
+      "node_id": "block",
+      "nodes": [
+        {
+          "node_id": "post_message",
+          "criterion": "functions",
+          "node_message": "No functions."
+        },
+        {
+          "node_id": "post_grade_modifier",
+          "criterion": "functions",
+          "modifier_type": "addition",
+          "modifier_value": 0,
+          "max_value": 1,
+          "passes": false
+        }
+      ]
+    }
+  }
+}

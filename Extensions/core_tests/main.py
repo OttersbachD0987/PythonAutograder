@@ -2,11 +2,11 @@ from __future__ import annotations
 
 # fmt: off
 
-from src.autograder.code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, ASTPatternTestNode
-from src.autograder.code_test_type import IParameterGroup, ParameterRepresentation
+from autograder.code_test import CodeTest, CodeTestNode, ProjectTestNode, LiteralTestNode, ASTPatternTestNode
+from autograder.code_test_type import IParameterGroup, ParameterRepresentation
 from subprocess import Popen, PIPE
 from typing import TYPE_CHECKING, cast
-from src.autograder.code_walker import ASTWalker
+from autograder.code_walker import ASTWalker
 import re
 import difflib
 

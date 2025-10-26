@@ -3,11 +3,11 @@ import textwrap
 import json
 from enum import IntEnum, auto
 from project.project import Project
-from utils.util import intput
+from utils.util import intput, floatput
 from autograder.autograder_application import Autograder
 from autograder.project_settings import Requirement
 from autograder.code_test_type import IParameterGroup, ParameterRepresentation
-from autograder.code_test import CodeTestType, CodeTest, DictionaryTestNode, LiteralTestNode, ListTestNode, ProjectTestNode, CodeTestNode
+from autograder.code_test import CodeTest, DictionaryTestNode, LiteralTestNode, ProjectTestNode, CodeTestNode
 from typing import Any, cast
 
 class Screen(IntEnum):
@@ -94,7 +94,7 @@ def main():
                 print("2) Set Import Override")
                 print("3) Remove Import Override")
                 print("4) Set Import Local")
-                print("5) Back")
+                print("5) Back\n")
 
 
                 match intput("Choice: "):
@@ -145,7 +145,8 @@ def main():
                 print("2) Import Tests")
                 print("3) Remove Test")
                 print("4) Edit Test")
-                print("5) Back\n")
+                print("5) Rename Test")
+                print("6) Back\n")
                 match intput("Choice: "):
                     case 1:
                         if (testType := input("Name of the test to toggle: ")) in grader.settings.tests:
@@ -169,6 +170,16 @@ def main():
                         else:
                             print(f"There is no project named {name}.")
                     case 5:
+                        if (name := input("Name of the test to rename: ")) in grader.settings.tests:
+                            if (new_name := input("New name for the test: ")) not in grader.settings.tests:
+                                grader.settings.tests[new_name] = grader.settings.tests.pop(name)
+                                if name in testsToRun:
+                                    testsToRun[testsToRun.index(name)] = new_name
+                            else:
+                                print(f"There is already a test named {new_name}.")
+                        else:
+                            print(f"There is no test named {name}.")
+                    case 6:
                         screen = Screen.MAIN
                     case _:
                         print("Invalid choice.")
@@ -183,11 +194,9 @@ def main():
                             case "ProjectTestNode":
                                 uses.setdefault((projectNode := cast(ProjectTestNode, cast(DictionaryTestNode, test.arguments).nodes[param.id])).nodeID, projectNode)
                                 print(f"{projectNode.nodeID}: \n  Project Target: {projectNode.projectName}\n  Project Entrypoint: {projectNode.projectEntrypoint}\n  Inputs:\n    {"\n    ".join([f"{index}: {value}" for index, value in enumerate(projectNode.projectInputs)])}")
-                            case "string":
+                            case "string"|"integer"|"boolean":
                                 uses.setdefault((literalNode := cast(LiteralTestNode, cast(DictionaryTestNode, test.arguments).nodes[param.id])).nodeID, literalNode)
                                 print(f"{literalNode.nodeID} ({literalNode.literalType}): {literalNode.literalValue}")
-                            case _:
-                                ...
                 print("+------------------------------------------------------------------+")
                 print("1) Edit Value")
                 print("2) Back\n")
@@ -217,13 +226,22 @@ def main():
                                                     case 3:
                                                         ...
                                                     case _:
-                                                        ...
+                                                        print("Invalid choice.")
                                         case 4:
                                             ...
                                         case _:
-                                            ...
+                                            print("Invalid choice.")
                             elif isinstance(node, LiteralTestNode):
-                                ...
+                                title: str = node.nodeID.replace("_", " ").title()
+                                match node.literalType:
+                                    case "string":
+                                        node.literalValue = input(f"New value for {title} (String): ")
+                                    case "float":
+                                        node.literalValue = floatput(f"New value for {title} (Float): ")
+                                    case "integer":
+                                        node.literalValue = intput(f"New value for {title} (Integer): ")
+                                    case _:
+                                        print("Unsupported Type.")
                         else:
                             print(f"There is no value named {name}.")
                     case 2:
