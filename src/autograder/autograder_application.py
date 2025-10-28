@@ -26,6 +26,11 @@ class Autograder:
             print(f"The file {e.filename} does not exist.")
     
     def saveConfiguration(self, a_path: str) -> None:
+        """Save the configuration of the autograder to a file.
+
+        Args:
+            a_path (str): The filepath to write the configuration to.
+        """
         try:
             with open(a_path, "w") as configurationFile:
                 json.dump(self.settings.toDict(), configurationFile)
