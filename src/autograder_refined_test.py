@@ -185,17 +185,18 @@ def main():
                         print("Invalid choice.")
             case Screen.TESTS_SETTINGS:
                 print("|-------------------------<=  SETTINGS  =>-------------------------|")
-                print(f"[{"X" if context in testsToRun else " "}] {context}\n      > {(testType := (test := grader.settings.tests[context]).type)}")
+                test: CodeTestNode = grader.settings.tests[context]
+                print(f"[{"X" if context in testsToRun else " "}] {context}\n      > {(testType := test.type)}")
                 displayParams: list[IParameterGroup] = CodeTest.TestTypes[testType].parameters()
                 uses: dict[str, CodeTestNode] = {}
                 for param in displayParams:
                     if isinstance(param, ParameterRepresentation):
                         match param.kind:
                             case "ProjectTestNode":
-                                uses.setdefault((projectNode := cast(ProjectTestNode, cast(DictionaryTestNode, test.arguments).nodes[param.id])).nodeID, projectNode)
+                                uses.setdefault((projectNode := cast(ProjectTestNode, test.arguments[param.id])).nodeID, projectNode)
                                 print(f"{projectNode.nodeID}: \n  Project Target: {projectNode.projectName}\n  Project Entrypoint: {projectNode.projectEntrypoint}\n  Inputs:\n    {"\n    ".join([f"{index}: {value}" for index, value in enumerate(projectNode.projectInputs)])}")
                             case "string"|"integer"|"boolean":
-                                uses.setdefault((literalNode := cast(LiteralTestNode, cast(DictionaryTestNode, test.arguments).nodes[param.id])).nodeID, literalNode)
+                                uses.setdefault((literalNode := cast(LiteralTestNode, test.arguments[param.id])).nodeID, literalNode)
                                 print(f"{literalNode.nodeID} ({literalNode.literalType}): {literalNode.literalValue}")
                 print("+------------------------------------------------------------------+")
                 print("1) Edit Value")
