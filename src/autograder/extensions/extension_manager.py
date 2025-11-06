@@ -8,10 +8,10 @@ class ExtensionManager:
         self.extensions: dict[str, tuple[Extension, Optional[ModuleType]]] = {}
     
     def loadFromDirectory(self, a_path: str) -> None:
-        """_summary_
+        """Load an extension from a directory.
 
         Args:
-            path (str): _description_
+            a_path (str): The path to the directory.
         """
         for dir in filter(lambda dir: dir.is_dir(), os.scandir(a_path)):
             try:
@@ -21,6 +21,8 @@ class ExtensionManager:
                 print(f"The extension {dir.name} does not have an extension.json in it's root directory.")
     
     def importExtensions(self) -> None:
+        """Import all loaded extensions.
+        """
         for extension_id, (extension, _) in self.extensions.items():
             #with open(f"{extension.path}/main.py") as extensionFile:
             #    exec(extensionFile.read())

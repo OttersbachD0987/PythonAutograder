@@ -15,13 +15,14 @@ class Extension:
     
     @classmethod
     def fromDict(cls, a_data: dict[str, Any], a_path: str) -> Self:
-        """_summary_
+        """Create an extension from a dictionary.
 
         Args:
-            data (dict[str, Any]): _description_
+            a_data (dict[str, Any]): The data loaded in from the extension.
+            a_path (str): The path the extension was loaded from.
 
         Returns:
-            Self: _description_
+            out (Self): The extension data from the data.
         """
         return cls(
             a_data.get("name", a_path),
@@ -31,6 +32,11 @@ class Extension:
         )
 
     def toDict(self) -> dict[str, Any]:
+        """_summary_
+
+        Returns:
+            out (dict[str, Any]): _description_
+        """
         return {
             "name": self.name,
             "description": self.description,
