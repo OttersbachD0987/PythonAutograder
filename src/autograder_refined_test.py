@@ -4,6 +4,8 @@ import json
 from enum import IntEnum, auto
 from project.project import Project
 from utils.util import intput, floatput
+import pandas as pd
+from pandas import DataFrame
 from autograder.autograder_application import Autograder
 from autograder.project_settings import Requirement
 from autograder.code_test_type import IParameterGroup, ParameterRepresentation
@@ -277,17 +279,32 @@ def main():
                 print("-"*68)
                 normalValue: float = 0
                 maxValue: float = 0
+                frame: DataFrame = DataFrame([], ["Passed", "Weight", "Points", "Feedback"])
                 if returned:
                     print(f"{returned[0]:<20} {str(False):<8} {100:<6} {returned[1]:<6} {returned[2]}")
+                    frame[returned[0]] = {
+                        "Passed": False,
+                        "Weight": 100,
+                        "Points": returned[1],
+                        "Feedback": returned[2]
+                    }
                 else:
                     for criterion, (message, amount, maxAmount, passes) in grader.instanceData.report.usable(grader.settings.criteria).items():
                         normalValue += amount
                         maxValue += maxAmount
+                        frame[criterion] = {
+                            "Passed": passes,
+                            "Weight": grader.settings.criteria[criterion],
+                            "Points": amount,
+                            "Feedback": message
+                        }
                         print(f"{criterion:<20} {str(passes):<8} {grader.settings.criteria[criterion]:<6} {amount:<6} {message}")
                 print("\n=== Final Grades ===")
                 print(f"Score: {normalValue}/{maxValue} (Breakdown: {grader.settings.criteria})")
+                print(frame)
                 input("\nContinue")
                 screen = Screen.MAIN
 
 if __name__ == "__main__":
+    
     main()
