@@ -19,7 +19,7 @@
         <div class="main-content">
             <h1>Visa.</h1>
             <p>Proof of working <strong>tech</strong><p>
-            <form id="myForm" method=post enctype=multipart/form-data>
+            <form id="fileForm" method=post enctype=multipart/form-data>
                 <input type=file name=file>
                 <input type=submit value=Upload>
             </form>
@@ -27,26 +27,21 @@
             <button onclick="fetch('{{ url_for('me_api') }}').then(response => response.json()).then(data => console.log(data))">Click me</button>
         </div>
         <script>
-            document.getElementById('myForm').addEventListener('submit', function(event) {
-                event.preventDefault(); // Prevent default form submission
-
-                const formData = new FormData(this); // Get form data
-
-                fetch("{{ url_for('upload_file') }}", { // Replace with your actual endpoint
+            document.getElementById('fileForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const formData = new FormData(this);
+                fetch("{{ url_for('upload_file') }}", {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json()) // Or .json() if your server returns JSON
+                .then(response => response.json())
                 .then(data => {
-                    // Handle the server's response here (e.g., display a success message)
-                    console.log(data);
                     if ("filepath" in data) {
                         image.src = data.filepath;
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    // Handle errors
                 });
             });
             const c = document.getElementById("drawCanvas");
