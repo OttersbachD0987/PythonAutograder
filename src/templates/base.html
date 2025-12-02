@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <script>
+            var x = 100;
+            const image = new Image();
+        </script>
+    </head>
+    <body class="content-container">
+        <div class="sidebar">
+            <h1 class="header-title">Sidebar</h1>
+        </div>
+        <div class="main-content">
+            <h1>Visa.</h1>
+            <p>Proof of working <strong>tech</strong><p>
+            <form id="myForm" method=post enctype=multipart/form-data>
+                <input type=file name=file>
+                <input type=submit value=Upload>
+            </form>
+            <canvas id="drawCanvas" width="200" height="100"></canvas>
+            <button onclick="fetch('{{ url_for('me_api') }}').then(response => response.json()).then(data => console.log(data))">Click me</button>
+        </div>
+        <script>
+            document.getElementById('myForm').addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent default form submission
+
+                const formData = new FormData(this); // Get form data
+
+                fetch("{{ url_for('upload_file') }}", { // Replace with your actual endpoint
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json()) // Or .json() if your server returns JSON
+                .then(data => {
+                    // Handle the server's response here (e.g., display a success message)
+                    console.log(data);
+                    if ("filepath" in data) {
+                        image.src = data.filepath;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Handle errors
+                });
+            });
+            const c = document.getElementById("drawCanvas");
+            const ctx = c.getContext("2d");
+            function drawCanvas() {
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, 200, 100);
+                ctx.fillStyle = "black";
+                ctx.fillRect(x, 20, 20, 20);
+                x += 1;
+                if (image.complete) {
+                    ctx.drawImage(image, 10, 10);
+                }
+                requestAnimationFrame(drawCanvas)
+            }
+
+            drawCanvas()
+        </script>
+    </body>
+</html>

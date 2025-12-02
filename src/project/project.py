@@ -9,8 +9,4 @@ class Project:
         self.dir: str = a_dir
         self.files: list[FileType] = utils.util.getFiles(a_dir)
 
-    # BROKEN
-    def evaluateImports(self, a_projectSettings: "ProjectSettings") -> None:
-        ...
-
 import utils.util

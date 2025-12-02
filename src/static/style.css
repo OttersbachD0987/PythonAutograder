@@ -1,0 +1,24 @@
+.wrapper, html, body {
+    height: 100%;
+    margin: 0;
+}
+
+.content-container {
+    display: flex;
+    flex-direction: row;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    min-width: 120px;
+    max-width: 240px;
+    background-color: darkslategray;
+    border: 2px inset black;
+}
+
+.main-content {
+    display: block;
+    flex-grow: 3;
+    background-color: darkslategray;
+}
