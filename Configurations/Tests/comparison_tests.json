@@ -1,6 +1,7 @@
 {
   "program2_variables": {
     "type": "walk_ast",
+    "report": "TEST_PROJECT",
     "arguments": {
       "test_project": {
         "node_id": "project",
@@ -61,6 +62,7 @@
   },
   "program2_functions": {
     "type": "walk_ast",
+    "report": "TEST_PROJECT",
     "arguments": {
       "test_project": {
         "node_id": "project",

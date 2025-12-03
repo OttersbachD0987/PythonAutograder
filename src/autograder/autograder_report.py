@@ -2,7 +2,7 @@ import dataclasses
 from dataclasses import dataclass
 import time
 from .autograder_modifier import AutograderModifier, ModifierType
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 class FinalModifier(NamedTuple):
     """The final modifier of a grade.
@@ -49,11 +49,11 @@ class AutograderReport:
         """
         self.modifiers.append(a_modifier)
 
-    def proccessModifiers(self) -> Optional[tuple[str, float, str]]:
+    def proccessModifiers(self) -> tuple[str, float, str]|None:
         """Process the modifiers of this grade report and return either an override value, or None if all were processed.
 
         Returns:
-            Optional[tuple[str, float, str]]: An override value if an overkill modifier was present.
+            tuple[str, float, str]|None: An override value if an overkill modifier was present.
         """
         for modifier in self.modifiers:
             match modifier.modifierType:

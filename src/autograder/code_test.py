@@ -3,8 +3,11 @@ from __future__ import annotations
 # fmt: off
 
 from dataclasses import dataclass
-from typing import ClassVar, Callable, Any, Self, TYPE_CHECKING, cast, override, Optional
+from typing import ClassVar, Any, Literal, Self, TYPE_CHECKING, cast, override
 from abc import ABC, abstractmethod
+from collections.abc import Callable
+
+from .autograder_report import AutograderReport
 from .code_walker import ASTPattern
 from .autograder_modifier import AutograderModifier, ModifierType
 from .code_test_type import CodeTestType, IParameterGroup, IParameterRepresentable, ParameterRepresentation
@@ -230,7 +233,7 @@ class InvalidTestNode(CodeTestNode):
 @dataclass
 class ComparisonTestNode(ICanReturnBool, IParameterRepresentable):
     left: ICanReturnAny
-    operator: str
+    operator: Literal["GTE","GT","LTE","LT","EQ","NEQ","AND","OR","XOR","NAND","NOR"]
     right: ICanReturnAny
 
     @override
@@ -346,16 +349,16 @@ class PostMessageTestNode(IExecutable):
 
     @override
     def execute(self, a_data: dict[str, Any]) -> None:
-        eval(f"cast(\"Autograder\", a_data[\"autograder\"]).instanceData.report.postLog(\"{self.criterion}\", f\"{self.nodeMessage}\")")
+        eval(f"cast(\"Autograder\", a_data[\"autograder\"]).instanceData.reports[a_data[\"current_project\"]] = cast(\"Autograder\", a_data[\"autograder\"]).instanceData.reports.get(a_data[\"current_project\"], AutograderReport())\ncast(\"Autograder\", a_data[\"autograder\"]).instanceData.reports[a_data[\"current_project\"]].postLog(\"{self.criterion}\", f\"{self.nodeMessage}\")")
 
 def CanReturnWrapper(a_value: Any|IDictSerializable) -> dict[str, Any]|Any:
     return a_value.toDict() if isinstance(a_value, IDictSerializable) else a_value
 
 def EvaluateFloat(a_value: float|ICanReturnFloat, a_data: dict[str, Any]) -> float:
-    return a_value.evaluateFloat(a_data) if isinstance(a_value, ICanReturnFloat) else cast(float, a_value)
+    return a_value.evaluateFloat(a_data) if isinstance(a_value, ICanReturnFloat) else a_value
 
 def EvaluateBool(a_value: bool|ICanReturnBool, a_data: dict[str, Any]) -> bool:
-    return a_value.evaluateBool(a_data) if isinstance(a_value, ICanReturnBool) else cast(bool, a_value)
+    return a_value.evaluateBool(a_data) if isinstance(a_value, ICanReturnBool) else a_value
 
 @dataclass
 class PostGradeModifierTestNode(IExecutable):
@@ -380,7 +383,8 @@ class PostGradeModifierTestNode(IExecutable):
 
     @override
     def execute(self, a_data: dict[str, Any]) -> None:
-        cast("Autograder", a_data["autograder"]).instanceData.report.addModifier(AutograderModifier(self.criterion, self.modifierType, EvaluateFloat(self.modifierValue, a_data), EvaluateFloat(self.maxValue, a_data), EvaluateBool(self.passes, a_data)))
+        cast("Autograder", a_data["autograder"]).instanceData.reports[a_data["current_project"]] = cast("Autograder", a_data["autograder"]).instanceData.reports.get(a_data["current_project"], AutograderReport())
+        cast("Autograder", a_data["autograder"]).instanceData.reports[a_data["current_project"]].addModifier(AutograderModifier(self.criterion, self.modifierType, EvaluateFloat(self.modifierValue, a_data), EvaluateFloat(self.maxValue, a_data), EvaluateBool(self.passes, a_data)))
 
 @dataclass
 class BlockTestNode(IExecutable):
@@ -401,10 +405,11 @@ class BlockTestNode(IExecutable):
 @dataclass
 class CodeTest:
     TestTypes: ClassVar[dict[str, CodeTestType]] = {}
-    type: str
+    type:   str
+    report: str
     arguments: dict[str, CodeTestNode]
-    found:    Optional[CodeTestNode] = None
-    notFound: Optional[CodeTestNode] = None
+    found:    CodeTestNode|None = None
+    notFound: CodeTestNode|None = None
 
     @classmethod
     def fromDict(cls, a_data: dict[str, Any]) -> Self:
@@ -412,6 +417,7 @@ class CodeTest:
         """
         return cls(
             a_data["type"],
+            a_data["report"],
             {key: parseCodeTestNode(argument) for key, argument in cast(dict[str, dict[str, Any]], a_data.get("arguments", {})).items()},
             parseCodeTestNode(a_data["found"]) if "found" in a_data else None,
             parseCodeTestNode(a_data["notFound"]) if "notFound" in a_data else None
@@ -420,10 +426,16 @@ class CodeTest:
     def toDict(self) -> dict[str, Any]:
         """Convert to a dict.
         """
-        return {
+        toReturn: dict[str, Any] = {
             "type": self.type,
+            "report": self.report,
             "arguments": {key: node.toDict() for key, node in self.arguments.items()}
         }
+        if self.found is not None:
+            toReturn["found"] = self.found.toDict()
+        if self.notFound is not None:
+            toReturn["notFound"] = self.notFound.toDict()
+        return toReturn
     
     @staticmethod
     def registerTestType(a_id: str, a_testFunction: Callable[[dict[str, CodeTestNode], "Autograder"], tuple[float, bool]], a_parameters: Callable[[], list[IParameterGroup]]) -> None:
@@ -431,11 +443,13 @@ class CodeTest:
     
     def runTest(self, a_grader: "Autograder", a_data: dict[str, Any]) -> tuple[float, bool]:
         a_data["factor"], a_data["success"] = CodeTest.TestTypes[self.type].testFunction(self.arguments, a_grader)
+        a_data["current_project"] = self.report
         if a_data["success"]:
             if self.found is not None:
                 executeCodeTestNode(cast(IExecutable, self.found), a_data)
         elif self.notFound is not None:
             executeCodeTestNode(cast(IExecutable, self.notFound), a_data)
+        del a_data["current_project"]
         return a_data.pop("factor"), a_data.pop("success")
 
 def parseCodeTestNode(a_node: dict[str, Any]) -> CodeTestNode:

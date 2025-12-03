@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .file_type import FileType
-    from autograder.project_settings import ProjectSettings
 
 class Project:
     def __init__(self, a_name: str, a_dir: str) -> None:

@@ -207,3 +207,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+static/temp/*
+bla.txt
+burgendy.py
+Group 2 Python Autograder Project.docx
+Group 2 Python Autograder README FILE.docx

@@ -23,6 +23,22 @@
                 <input type=file name=file>
                 <input type=submit value=Upload>
             </form>
+            <form id="instructForm" method=post enctype=multipart/form-data>
+                <input type=file name=file>
+                <input type=submit value=Upload>
+            </form>
+            <form id="configForm" method=post enctype=multipart/form-data>
+                <input type=file name=file>
+                <input type=submit value=Upload>
+            </form>
+            <form id="studentForm" method=post enctype=multipart/form-data>
+                <input type=file name=file multiple>
+                <input type=submit value=Upload>
+            </form>
+            <form id="configFile" method=post enctype=multipart/form-data>
+                <input type=file name=file>
+                <input type=submit value=Upload>
+            </form>
             <canvas id="drawCanvas" width="200" height="100"></canvas>
             <button onclick="fetch('{{ url_for('me_api') }}').then(response => response.json()).then(data => console.log(data))">Click me</button>
         </div>
@@ -39,6 +55,66 @@
                     if ("filepath" in data) {
                         image.src = data.filepath;
                     }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+            document.getElementById('instructForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const formData = new FormData(this);
+                fetch("{{ url_for('upload_instructor') }}", {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+            document.getElementById('configForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const formData = new FormData(this);
+                fetch("{{ url_for('upload_tests_config') }}", {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+            document.getElementById('studentForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const formData = new FormData(this);
+                fetch("{{ url_for('upload_students') }}", {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+            document.getElementById('configFile').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const formData = new FormData(this);
+                fetch("{{ url_for('upload_config') }}", {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
                 })
                 .catch(error => {
                     console.error('Error:', error);

@@ -3,7 +3,7 @@
 import ast
 import re
 from ast import NodeVisitor, While, Constant, Compare, expr, Call, UnaryOp, Not, Gt, GtE, Lt, LtE, Eq, NotEq, FunctionDef, ImportFrom, Name, Load, Set, Del, AST, Add, alias, And, AnnAssign, arg, arguments, Assert, Assign, AsyncFor, AsyncFunctionDef, AsyncWith, Attribute, AugAssign, Await, BinOp, BitAnd, BitOr, BitXor, BoolOp, boolop, Break, ClassDef, cmpop, comprehension, Continue, Delete, Dict, DictComp, Div, ExceptHandler, excepthandler, Expr, expr_context, Expression, FloorDiv, For, FormattedValue, FunctionType, GeneratorExp, Global, If, IfExp, Import, In, Interactive, Invert, Is, IsNot, JoinedStr, keyword, Lambda, List, ListComp, LShift, Match, match_case, MatchAs, MatchClass, MatchMapping, MatchOr, MatchSequence, MatchSingleton, MatchStar, MatchValue, MatMult, Mod, mod, Module, Mult, NamedExpr, NodeTransformer, Nonlocal, NotIn, operator, Or, ParamSpec, Pass, pattern, Pow, Raise, Return, RShift, SetComp, Slice, Starred, stmt, Store, Sub, Subscript, Try, TryStar, Tuple, type_ignore, type_param, TypeAlias, TypeIgnore, TypeVar, TypeVarTuple, UAdd, unaryop, USub, With, withitem, Yield, YieldFrom, iter_fields
-from typing import Any, cast, TYPE_CHECKING, Optional, override
+from typing import Any, cast, TYPE_CHECKING, override
 from enum import StrEnum, auto
 from dataclasses import dataclass
 from .code_test_type import IParameterGroup, IParameterRepresentable, ParameterRepresentation
@@ -154,7 +154,7 @@ def isTrue(a_node: expr, a_default: bool = False) -> bool:
     return a_default
 
 class ASTPattern(IParameterRepresentable):
-    def __init__(self, a_nodeType: str|ASTNodeType, a_comparisonData: Optional[dict[str, Any]] = None) -> None:
+    def __init__(self, a_nodeType: str|ASTNodeType, a_comparisonData: dict[str, Any]|None = None) -> None:
         """
         Args:
             a_nodeType (str|ASTNodeType): The node type of the ASTPattern, either in string form, or a ASTNodeType enum.
@@ -486,7 +486,14 @@ class ASTWalker(NodeVisitor):
                 ...
             case ASTNodeType.EXPRESSION:
                 if isinstance(a_node, Expression):
-                    a_node.body
+                    if "match_kind" in a_pattern.comparisonData:
+                        match a_pattern.comparisonData["match_kind"]:
+                            case "test_pattern":
+                                return self.visiting(a_node.body, a_pattern.comparisonData["test_pattern"])
+                            case "test_patterns":
+                                return 1 if any([0 < self.visiting(a_node.body, testPattern) for testPattern in a_pattern.comparisonData["test_patterns"]]) else 0
+                            case _:
+                                ...
                     return 1
             case ASTNodeType.FLOOR_DIV:
                 if isinstance(a_node, FloorDiv):
