@@ -349,7 +349,8 @@ class PostMessageTestNode(IExecutable):
 
     @override
     def execute(self, a_data: dict[str, Any]) -> None:
-        eval(f"cast(\"Autograder\", a_data[\"autograder\"]).instanceData.reports[a_data[\"current_project\"]] = cast(\"Autograder\", a_data[\"autograder\"]).instanceData.reports.get(a_data[\"current_project\"], AutograderReport())\ncast(\"Autograder\", a_data[\"autograder\"]).instanceData.reports[a_data[\"current_project\"]].postLog(\"{self.criterion}\", f\"{self.nodeMessage}\")")
+        a_data["autograder"].instanceData.reports[a_data["current_project"]] = a_data["autograder"].instanceData.reports.get(a_data["current_project"], AutograderReport())
+        eval(f"cast(\"Autograder\", a_data[\"autograder\"]).instanceData.reports[a_data[\"current_project\"]].postLog(\"{self.criterion}\", f\"{self.nodeMessage}\")")
 
 def CanReturnWrapper(a_value: Any|IDictSerializable) -> dict[str, Any]|Any:
     return a_value.toDict() if isinstance(a_value, IDictSerializable) else a_value

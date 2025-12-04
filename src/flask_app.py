@@ -4,6 +4,7 @@ import json
 from pandas import DataFrame
 from flask import Flask, render_template, g, flash, request, redirect, url_for
 from werkzeug.utils import secure_filename
+from autograder.autograder_instance_data import AutograderInstanceData
 from autograder.autograder_application import Autograder
 from autograder.project_settings import Requirement
 from autograder.code_test_type import IParameterGroup, ParameterRepresentation
@@ -11,6 +12,7 @@ from autograder.code_test import CodeTest, DictionaryTestNode, LiteralTestNode, 
 from typing import Any, cast
 
 from project.project import Project
+from project.python_file import PythonFile
 
 UPLOAD_FOLDER = os.path.join(os.curdir, 'static/temp')
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
@@ -113,8 +115,9 @@ def upload_instructor():
             return {"message": "No selected file"}
         if file and allowed_py_file(file.filename):
             filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            instructor = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], filename.rsplit(".", 1)[0]), exist_ok=True)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename.rsplit(".", 1)[0], filename))
+            instructor = (os.path.join(app.config['UPLOAD_FOLDER'], filename.rsplit(".", 1)[0]), filename.rsplit(".", 1)[0])
             return {"filepath": instructor}
     return {"message": "Wrong method?"}
 
@@ -197,27 +200,36 @@ def me_api():
 
 @app.route("/grade")
 def grade_api():
-    global grader, students, bog
+    global grader, students, bog, instructor
+    grader.settings.tests = {}
+    grader.instanceData = AutograderInstanceData()
+    grader.instanceData.projects[internalName] = Project(internalName := instructor[1], instructor[0])
+    failed = []
     for projecta in students:
         grader.instanceData.projects[internalName] = Project(internalName := projecta[1], projecta[0])
+        if len(cast("PythonFile", grader.instanceData.projects[internalName].files[0]).errors) > 0:
+            failed.append(internalName)
+            continue
         ioa: StringIO = StringIO()
-        ioa.write(bog.replace("ENTRY", projecta[1]).replace("TEST_PROJECT", projecta[1]).replace("program2_variables", f"{projecta[1]}_vars").replace("program2_functions", f"{projecta[1]}_funcs"))
-        print(bog.replace("ENTRY", projecta[1]).replace("TEST_PROJECT", projecta[1]).replace("program2_variables", f"{projecta[1]}_vars").replace("program2_functions", f"{projecta[1]}_funcs"))
+        ioa.write(bog.replace("INSTRUCT_ENTRY", instructor[1]).replace("INSTRUCT_PROJECT", instructor[1]).replace("ENTRY", projecta[1]).replace("TEST_PROJECT", projecta[1]).replace("PROGRAM_NAME", f"{projecta[1]}"))
+        print(bog.replace("INSTRUCT_ENTRY", instructor[1]).replace("INSTRUCT_PROJECT", instructor[1]).replace("ENTRY", projecta[1]).replace("TEST_PROJECT", projecta[1]).replace("PROGRAM_NAME", f"{projecta[1]}"))
         ioa.seek(0)
         grader.settings.addTests(json.load(ioa))
     [grader.settings.tests[test].runTest(grader, data) for test in grader.settings.tests.keys()]
+    tempest = ""
     for report in grader.instanceData.reports.values():
         returned: tuple[str, float, str]|None = report.proccessModifiers()
-        print("|-------------------------<=   RESULT   =>-------------------------|")
-        print("====== Rubric ======")
-        print(f"{'Criterion':<20} {'Passed':<8} {'Weight':<6} {'Points':<6} Feedback")
+        tempest += ("|-------------------------<=   RESULT   =>-------------------------|") + "\n"
+        tempest += ("====== Rubric ======") + "\n"
+        tempest += (f"{'Criterion':<20} {'Passed':<8} {'Weight':<6} {'Points':<6} Feedback") + "\n"
 
-        print("-"*68)
+        tempest += ("-"*68) + "\n"
         normalValue: float = 0
         maxValue: float = 0
         frame: DataFrame = DataFrame([], ["Passed", "Weight", "Points", "Feedback"])
         if returned:
-            print(f"{returned[0]:<20} {str(False):<8} {100:<6} {returned[1]:<6} {returned[2]}")
+            tempest += (f"{returned[0]:<20} {str(False):<8} {100:<6} {returned[1]:<6} {returned[2]}") + "\n"
+            #normalValue += returned[1]
             frame[returned[0]] = {
                 "Passed": False,
                 "Weight": 100,
@@ -234,12 +246,32 @@ def grade_api():
                     "Points": amount,
                     "Feedback": message
                 }
-                print(f"{criterion:<20} {str(passes):<8} {grader.settings.criteria[criterion]:<6} {amount:<6} {message}")
-        print("\n=== Final Grades ===")
-        print(f"Score: {normalValue}/{maxValue} (Breakdown: {grader.settings.criteria})")
-        print(frame)
+                tempest += (f"{criterion:<20} {str(passes):<8} {grader.settings.criteria[criterion]:<6} {amount:<6} {message}") + "\n"
+        tempest += ("\n=== Final Grades ===") + "\n"
+        tempest += (f"Score: {normalValue}/{maxValue} (Breakdown: {grader.settings.criteria})") + "\n"
+        #tempest += (frame) + "\n"
+    for fail in failed:
+        tempest += ("|-------------------------<=   RESULT   =>-------------------------|") + "\n"
+        tempest += ("====== Rubric ======") + "\n"
+        tempest += (f"{'Criterion':<20} {'Passed':<8} {'Weight':<6} {'Points':<6} Feedback") + "\n"
+
+        tempest += ("-"*68) + "\n"
+        normalValue: float = 0
+        maxValue: float = 0
+        frame: DataFrame = DataFrame([], ["Passed", "Weight", "Points", "Feedback"])
+        tempest += (f"{"works":<20} {str(False):<8} {100:<6} {1:<6} {"Program fails to run."}") + "\n"
+        frame[returned[0]] = {
+            "Passed": False,
+            "Weight": 100,
+            "Points": 1,
+            "Feedback": "Program fails to run."
+        }
+        tempest += ("\n=== Final Grades ===") + "\n"
+        tempest += (f"Score: {1}/{maxValue} (Breakdown: {grader.settings.criteria})") + "\n"
+        #tempest += (frame) + "\n"
+    print(tempest)
     return {
-        "username": 2
+        "username": tempest
     }
 
 if __name__ == "__main__":

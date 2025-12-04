@@ -31,6 +31,7 @@ class PythonFile(FileType):
                     self.imports = [name for node in ast.walk(self.ast) if isinstance(node, Import) for name in node.names]
                 except SyntaxError as e:
                     print(f"Syntax error:\n{e}")
+                    self.ast: Module = Module()
                     self.errors.append(("Syntax", f"{e.lineno}\xA1{e.end_lineno}\xA0{e.offset}\xA1{e.end_offset}\xA0{e.text}"))
                 file.seek(0)
                 try:

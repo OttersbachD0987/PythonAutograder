@@ -1,5 +1,5 @@
 {
-  "program2_variables": {
+  "PROGRAM_NAME_variables": {
     "type": "walk_ast",
     "report": "TEST_PROJECT",
     "arguments": {
@@ -60,7 +60,7 @@
       ]
     }
   },
-  "program2_functions": {
+  "PROGRAM_NAME_functions": {
     "type": "walk_ast",
     "report": "TEST_PROJECT",
     "arguments": {
@@ -107,6 +107,90 @@
         {
           "node_id": "post_grade_modifier",
           "criterion": "functions",
+          "modifier_type": "addition",
+          "modifier_value": 0,
+          "max_value": 1,
+          "passes": false
+        }
+      ]
+    }
+  },
+  "PROGRAM_NAME_output": {
+    "type": "compare_output",
+    "report": "TEST_PROJECT",
+    "arguments": {
+      "base_project": {
+        "node_id": "project",
+        "project_name": "INSTRUCT_PROJECT",
+        "project_entrypoint": "INSTRUCT_ENTRY.py",
+        "project_arguments": {
+          "node_id": "dictionary",
+          "nodes": {
+            "a": {
+              "node_id": "literal",
+              "literalType": "string",
+              "literalValue": "a"
+            }
+          }
+        },
+        "project_inputs": []
+      },
+      "test_project": {
+        "node_id": "project",
+        "project_name": "TEST_PROJECT",
+        "project_entrypoint": "ENTRY.py",
+        "project_arguments": {
+          "node_id": "dictionary",
+          "nodes": {
+            "a": {
+              "node_id": "literal",
+              "literalType": "string",
+              "literalValue": "a"
+            }
+          }
+        },
+        "project_inputs": []
+      },
+      "stdout": {
+        "node_id": "literal",
+        "literalType": "string",
+        "literalValue": "a"
+      },
+      "stderr": {
+        "node_id": "literal",
+        "literalType": "string",
+        "literalValue": "b"
+      },
+      "return_code": {
+        "node_id": "literal",
+        "literalType": "string",
+        "literalValue": "c"
+      }
+    },
+    "found": {
+      "node_id": "block",
+      "nodes": [
+        {
+          "node_id": "post_grade_modifier",
+          "criterion": "output",
+          "modifier_type": "addition",
+          "modifier_value": 1,
+          "max_value": 1,
+          "passes": true
+        }
+      ]
+    },
+    "notFound": {
+      "node_id": "block",
+      "nodes": [
+        {
+          "node_id": "post_message",
+          "criterion": "output",
+          "node_message": "No functions."
+        },
+        {
+          "node_id": "post_grade_modifier",
+          "criterion": "output",
           "modifier_type": "addition",
           "modifier_value": 0,
           "max_value": 1,

@@ -8,6 +8,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
         <script>
+            var balrog = "";
             var x = 100;
             var mx;
             var my;
@@ -18,33 +19,37 @@
     <body class="content-container">
         <div class="sidebar">
             <h1 class="header-title">Sidebar</h1>
-        </div>
-        <div class="main-content">
-            <h1>Visa.</h1>
             <h2>Grading</h2>
+            <h3>Instructor File</h3>
             <form id="instructForm" method=post enctype=multipart/form-data>
                 <input type=file name=file>
                 <input type=submit value=Upload>
             </form>
+            <h3>Module Grading Configuration</h3>
             <form id="configForm" method=post enctype=multipart/form-data>
                 <input type=file name=file>
                 <input type=submit value=Upload>
             </form>
+            <h3>Module Criteria</h3>
             <form id="criteriaForm" method=post enctype=multipart/form-data>
                 <input type=file name=file>
                 <input type=submit value=Upload>
             </form>
+            <h3>Student Files</h3>
             <form id="studentForm" method=post enctype=multipart/form-data>
                 <input type=file name=file multiple>
                 <input type=submit value=Upload>
             </form>
+            <button onclick="fetch('{{ url_for('grade_api') }}').then(response => response.json()).then(data => {console.log(data); resultingStuff = data; balrog = resultingStuff.username;})">Grade</button>
             <h2>Autograder Config</h2>
             <form id="configFile" method=post enctype=multipart/form-data>
                 <input type=file name=file>
                 <input type=submit value=Upload>
             </form>
+        </div>
+        <div class="main-content">
+            <h1>Results.</h1>
             <canvas id="drawCanvas" width="600px" height="600px"></canvas>
-            <button onclick="fetch('{{ url_for('grade_api') }}').then(response => response.json()).then(data => {console.log(data); resultingStuff = data;})">Grade</button>
         </div>
         <script>
             function getMousePosition(canvas, event) {
@@ -140,22 +145,25 @@
                 ctx.fillStyle = "white";
                 ctx.fillRect(0, 0, 600, 600);
                 ctx.fillStyle = "black";
-                ctx.fillRect(x, 20, 20, 20);
-                x += 1;
-                if (image.complete) {
-                    ctx.drawImage(image, 10, 10);
-                }
-                let array = [100, 45, 18, 98];
-                for (let index = 0; index < array.length; index++) {
-                    const element = array[index];
-                    
-                    ctx.fillRect(75 * index, 400 - element, 65, element);
-                    if (mx > 75 * index && mx < 75 * index + 65 && my > 400 - element && my < 400) {
-                        ctx.strokeStyle = "red";
-                        ctx.lineWidth = 5;
-                        ctx.strokeRect(75 * index, 400 - element, 65, element);
-                    }
-                }
+                ctx.font = '12px Arial';
+                var y = 0;
+            
+                balrog.split("\n").forEach(a => {
+                    ctx.fillText(a, 10, y);
+                    y += 14;
+                });
+                //ctx.fillText(balrog, 10, 10);
+                //let array = [100, 45, 18, 98];
+                //for (let index = 0; index < array.length; index++) {
+                //    const element = array[index];
+                //    
+                //    ctx.fillRect(75 * index, 400 - element, 65, element);
+                //    if (mx > 75 * index && mx < 75 * index + 65 && my > 400 - element && my < 400) {
+                //        ctx.strokeStyle = "red";
+                //        ctx.lineWidth = 5;
+                //        ctx.strokeRect(75 * index, 400 - element, 65, element);
+                //    }
+                //}
                 requestAnimationFrame(drawCanvas)
             }
 
