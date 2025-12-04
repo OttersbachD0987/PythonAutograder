@@ -6,7 +6,7 @@
       "test_project": {
         "node_id": "project",
         "project_name": "TEST_PROJECT",
-        "project_entrypoint": "main.py",
+        "project_entrypoint": "ENTRY.py",
         "project_arguments": {
           "node_id": "dictionary",
           "nodes": {}
@@ -67,7 +67,7 @@
       "test_project": {
         "node_id": "project",
         "project_name": "TEST_PROJECT",
-        "project_entrypoint": "main.py",
+        "project_entrypoint": "ENTRY.py",
         "project_arguments": {
           "node_id": "dictionary",
           "nodes": {}

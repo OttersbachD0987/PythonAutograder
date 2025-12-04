@@ -9,7 +9,10 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
         <script>
             var x = 100;
+            var mx;
+            var my;
             const image = new Image();
+            var resultingStuff;
         </script>
     </head>
     <body class="content-container">
@@ -18,11 +21,7 @@
         </div>
         <div class="main-content">
             <h1>Visa.</h1>
-            <p>Proof of working <strong>tech</strong><p>
-            <form id="fileForm" method=post enctype=multipart/form-data>
-                <input type=file name=file>
-                <input type=submit value=Upload>
-            </form>
+            <h2>Grading</h2>
             <form id="instructForm" method=post enctype=multipart/form-data>
                 <input type=file name=file>
                 <input type=submit value=Upload>
@@ -31,35 +30,30 @@
                 <input type=file name=file>
                 <input type=submit value=Upload>
             </form>
+            <form id="criteriaForm" method=post enctype=multipart/form-data>
+                <input type=file name=file>
+                <input type=submit value=Upload>
+            </form>
             <form id="studentForm" method=post enctype=multipart/form-data>
                 <input type=file name=file multiple>
                 <input type=submit value=Upload>
             </form>
+            <h2>Autograder Config</h2>
             <form id="configFile" method=post enctype=multipart/form-data>
                 <input type=file name=file>
                 <input type=submit value=Upload>
             </form>
-            <canvas id="drawCanvas" width="200" height="100"></canvas>
-            <button onclick="fetch('{{ url_for('me_api') }}').then(response => response.json()).then(data => console.log(data))">Click me</button>
+            <canvas id="drawCanvas" width="600px" height="600px"></canvas>
+            <button onclick="fetch('{{ url_for('grade_api') }}').then(response => response.json()).then(data => {console.log(data); resultingStuff = data;})">Grade</button>
         </div>
         <script>
-            document.getElementById('fileForm').addEventListener('submit', function(event) {
-                event.preventDefault();
-                const formData = new FormData(this);
-                fetch("{{ url_for('upload_file') }}", {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if ("filepath" in data) {
-                        image.src = data.filepath;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-            });
+            function getMousePosition(canvas, event) {
+                let rect = canvas.getBoundingClientRect();
+                mx = event.clientX - rect.left;
+                my = event.clientY - rect.top;
+                console.log("Coordinate x: " + mx,
+                    "Coordinate y: " + my);
+            }
             document.getElementById('instructForm').addEventListener('submit', function(event) {
                 event.preventDefault();
                 const formData = new FormData(this);
@@ -79,6 +73,21 @@
                 event.preventDefault();
                 const formData = new FormData(this);
                 fetch("{{ url_for('upload_tests_config') }}", {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+            document.getElementById('criteriaForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const formData = new FormData(this);
+                fetch("{{ url_for('upload_criteria') }}", {
                     method: 'POST',
                     body: formData
                 })
@@ -122,14 +131,30 @@
             });
             const c = document.getElementById("drawCanvas");
             const ctx = c.getContext("2d");
+            c.addEventListener('mousemove', function(event) {
+                const element = document.elementFromPoint(event.clientX, event.clientY);
+
+                getMousePosition(c, event);
+            });
             function drawCanvas() {
                 ctx.fillStyle = "white";
-                ctx.fillRect(0, 0, 200, 100);
+                ctx.fillRect(0, 0, 600, 600);
                 ctx.fillStyle = "black";
                 ctx.fillRect(x, 20, 20, 20);
                 x += 1;
                 if (image.complete) {
                     ctx.drawImage(image, 10, 10);
+                }
+                let array = [100, 45, 18, 98];
+                for (let index = 0; index < array.length; index++) {
+                    const element = array[index];
+                    
+                    ctx.fillRect(75 * index, 400 - element, 65, element);
+                    if (mx > 75 * index && mx < 75 * index + 65 && my > 400 - element && my < 400) {
+                        ctx.strokeStyle = "red";
+                        ctx.lineWidth = 5;
+                        ctx.strokeRect(75 * index, 400 - element, 65, element);
+                    }
                 }
                 requestAnimationFrame(drawCanvas)
             }
